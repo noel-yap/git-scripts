@@ -17,10 +17,11 @@ if [[ "$1" == *..* ]]; then
 else
   branch="$1"
 
-  range="HEAD..${branch}"
+  range="${branch}~..${branch}"
 fi
 
 commits=($(git log --pretty=format:"%h" "${range}" | tac))
+echo "grafting ${commits[@]}"
 
 git branch -D "${branch}"
 git switch -c "${branch}"
