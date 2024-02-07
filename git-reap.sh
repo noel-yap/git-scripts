@@ -7,7 +7,9 @@
 )
 
 branch="$(git rev-parse --abbrev-ref HEAD)"
-git switch master
-git pull origin master
+trunk="$(git config --get branch.trunk)"
+
+git switch "${trunk}"
+git pull origin "${trunk}"
 git switch "${branch}"
-git rebase master
+git rebase "${trunk}"

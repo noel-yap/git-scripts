@@ -7,6 +7,7 @@ set -u
 if ! git rev-parse --is-inside-work-tree 2>/dev/null
 then
   git init
+  git config --local branch.trunk "$(git config --get init.defaultbranch)"
 else
   branch="${USER}/$1"
 
