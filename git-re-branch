@@ -1,9 +1,0 @@
-#!/bin/bash
-
-branch="$1"
-
-git branch "${branch}.tmp" "${branch}" &&
-  git branch -D "${branch}" &&
-  git switch -c "${branch}" &&
-  git cherry-pick "${branch}.tmp" &&
-  git branch -D "${branch}.tmp"
