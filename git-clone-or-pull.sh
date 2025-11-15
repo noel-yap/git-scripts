@@ -7,7 +7,7 @@ set -u
 readonly USAGE_STRING="$0 [«GIT_OPT»…] «REPO_URL» [«DIR»]"
 
 GIT_OPTS=()
-while [[ "$1" != *.git ]]; do
+while [[ "$1" != *.git ]] && [[ ! -d "$1" ]]; do
   GIT_OPTS+=("$1")
   shift
 done
