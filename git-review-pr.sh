@@ -1,24 +1,28 @@
 #!/opt/homebrew/bin/bash -eu
+# shellcheck disable=SC2155
 set -o pipefail
 shopt -s inherit_errexit
 
 # review pr
 
+readonly GIT_DOMAIN
+readonly GIT_ORG
+
 readonly PR_URL="$1"
 
-readonly REPO="$(echo "${PR_URL}" | sed -e 's|^https://github\.com/\(.*\)/pull/.*$|\1|')"
+readonly REPO="$(echo "${PR_URL}" | sed -e "s|^https://${GIT_DOMAIN}/\(.*\)/pull/.*$|\1|")"
 readonly PR="$(basename "${PR_URL}")"
 
 readonly PROJECT="$(basename "${REPO}")"
 readonly BRANCH="$(gh pr view "${PR}" --repo "${REPO}" --json headRefName --template "{{.headRefName}}")"
 
-readonly REPO_URL="git@github.com:rzsoftware/${PROJECT}.git"
+readonly REPO_URL="git@${GIT_DOMAIN}:${GIT_ORG}/${PROJECT}.git"
 
 (
   mkdir -p "${BRANCH}"
   cd "${BRANCH}"
 
-  git clone --single-branch --branch main "${REPO_URL}"
+  git clone-or-pull --single-branch "${REPO_URL}"
   cd "${PROJECT}"
 
   git config --add remote.origin.fetch "+refs/heads/${BRANCH}:refs/remotes/origin/${BRANCH}"
