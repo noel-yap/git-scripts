@@ -14,7 +14,7 @@ if [[ $# -gt 0 ]]; then
     BRANCH_NAME='@{-1}'
   fi
 else
-  BRANCH_NAME="$(git config --get branch.trunk)"
+  BRANCH_NAME="$(git config --get init.defaultBranch)"
 fi
 
 git switch "${BRANCH_NAME}"

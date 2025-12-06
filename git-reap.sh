@@ -7,7 +7,7 @@
 )
 
 branch="$(git rev-parse --abbrev-ref HEAD)"
-trunk="$(git config --get branch.trunk)"
+trunk="$(git config --get init.defaultBranch)"
 
 git switch "${trunk}"
 git pull origin "${trunk}"

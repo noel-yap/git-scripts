@@ -28,8 +28,4 @@ if [[ -d "${DIR}" ]]; then
   )
 else
   git clone ${GIT_OPTS[@]-} "${REPO_URL}" "${DIR}"
-  (
-    cd "${DIR}"
-    git config --local branch.trunk master
-  )
 fi
