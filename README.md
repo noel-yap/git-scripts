@@ -14,6 +14,39 @@ These scripts are intended to be placed somewhere on your PATH (e.g., `~/bin`) w
 - Recommended Git config:
   - `init.defaultBranch` set to your default branch name (e.g., `main`).
 
+## Aliases
+
+The repository includes a sample Git config (see `.gitconfig`) that defines handy `git` aliases wired to these scripts and a few useful Git shortcuts. Below is a quick reference of the aliases and what they do:
+
+- `aliases` → `git config --get-regexp alias` — List all configured aliases.
+- `destash` → `git stash pop` — Apply the most recent stash and drop it.
+- `cb` → `git-cb.sh` — Switch to a branch (see "git cb").
+- `clone-or-pull` → `git-clone-or-pull.sh` — Clone if missing, otherwise pull (see "git clone-or-pull").
+- `cpr` → `git-create-pr.sh` — Create a PR and open it (see "git create-pr").
+- `ct` → `git-create-task.sh "$@" && idea "$1/$2"` — Create a task workspace and open it in IntelliJ IDEA (requires `idea` launcher).
+- `cwc` → `git-clone-with-cache.sh` — Clone via local cache (see "git clone-with-cache").
+- `get` → `git-get.sh` — Fetch and switch to a remote branch (see "git get").
+- `graft` → `git-graft.sh` — Recreate a branch by cherry-picking a range (see "git graft").
+- `graph` → pretty `git log --graph` with branches/remotes/tags.
+- `mb` → `git branch` — Short alias for listing/managing branches.
+- `mcb` → `git-mcb.sh` — Make and checkout a new branch (see "git mcb").
+- `mpr` → `git-merge-pr.sh` — Merge the current PR via `gh` (see "git merge-pr").
+- `push-pull` → `while ! git push; do git pull; done` — Keep trying to push, pulling if needed.
+- `pwc` → `git-pull-with-cache.sh` — Update a mirror-backed repo and pull default branch (see "git pull-with-cache").
+- `rb` → `git-shear.sh` — Force-delete local branches (name is historical; see "git shear").
+- `reap` → `git-reap.sh` — Update cache, rebase on trunk (see "git reap").
+- `rmcb` → `git-rmcb.sh` — Remove and recreate a branch (see "git rmcb").
+- `rpr` → open the workspace created by `git-review-pr.sh` in IDEA — Review a PR locally (requires `idea`).
+- `shear` → `git-shear.sh` — Force-delete local branches (see "git shear").
+- `snapshot` → `git-snapshot.sh` — Quick working snapshot using stash (see "git snapshot").
+- `sow` → `git push` — Push the current branch.
+- `sprout` → `git-sprout.sh` — Init or create a namespaced feature branch (see "git sprout").
+- `uncommit` → `git reset HEAD^ --` — Undo last commit, keep changes in working tree.
+- `unstage` → `git reset -q HEAD --` — Unstage changes, keep working tree as-is.
+- `upstream-set` → `github-upstream-set.sh` — Helper to set upstream remotes (requires your local script).
+
+To use these, you can copy relevant entries into your global `~/.gitconfig`, or include this repo’s `.gitconfig` from your own config. Ensure the scripts are on your `PATH` without the `.sh` suffix as noted below.
+
 ## Scripts
 
 ### git cb
