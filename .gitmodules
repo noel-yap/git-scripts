@@ -1,0 +1,4 @@
+[submodule "external/bash-mock"]
+	path = external/bash-mock
+	url = git@github.com:noel-yap/bash-mock.git
+	branch = main
