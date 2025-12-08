@@ -1,0 +1,8 @@
+--shell bash
+--default-path "**/spec"
+--require spec_helper
+--pattern "spec/**"
+
+## Default kcov (coverage) options
+--kcov
+--kcov-options "--include-pattern=.sh,.shlib"

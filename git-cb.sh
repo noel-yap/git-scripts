@@ -1,8 +1,6 @@
-#!/bin/bash
-
-set -e
+#!/opt/homebrew/bin/bash -eu
 set -o pipefail
-set -u
+shopt -s inherit_errexit
 
 readonly USAGE_STRING="$0 [«BRANCH_NAME»]"
 
