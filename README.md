@@ -8,6 +8,8 @@ These scripts are intended to be placed somewhere on your PATH (e.g., `~/bin`) w
 - Bash (some scripts use options available in modern Bash; macOS Homebrew Bash is used in a few scripts at `/opt/homebrew/bin/bash`).
 - GitHub CLI `gh` for PR-related commands.
 - macOS Google Chrome for opening PR URLs (used by `git create-pr`).
+- Atlassian CLI `acli` and `jq` for `git create-task` (used to fetch and parse task summaries).
+- IntelliJ IDEA command-line launcher `idea` if you use the `ct`/`rpr` aliases to auto-open workspaces.
 - Some scripts rely on environment variables:
   - `GIT_DOMAIN` (e.g., `github.com`)
   - `GIT_ORG` (your organization/user)
@@ -23,7 +25,7 @@ The repository includes a sample Git config (see `.gitconfig`) that defines hand
 - `cb` → `git-cb.sh` — Switch to a branch (see "git cb").
 - `clone-or-pull` → `git-clone-or-pull.sh` — Clone if missing, otherwise pull (see "git clone-or-pull").
 - `cpr` → `git-create-pr.sh` — Create a PR and open it (see "git create-pr").
-- `ct` → `git-create-task.sh "$@" && idea "$1/$2"` — Create a task workspace and open it in IntelliJ IDEA (requires `idea` launcher).
+- `ct` → `git-create-task.sh "$@" && idea "$1"*"/$2"` — Create a task workspace and open it in IntelliJ IDEA (uses a wildcard to match the created directory; requires `idea` launcher).
 - `cwc` → `git-clone-with-cache.sh` — Clone via local cache (see "git clone-with-cache").
 - `get` → `git-get.sh` — Fetch and switch to a remote branch (see "git get").
 - `graft` → `git-graft.sh` — Recreate a branch by cherry-picking a range (see "git graft").
@@ -91,16 +93,17 @@ Requirements:
 - macOS Chrome installed at `/Applications/Google Chrome.app` (uses profile `Profile 1`).
 
 ### git create-task
-Create a working directory for a task, clone the project into it, create a branch, and push it upstream.
+Create a working directory for a task (including a short summary), clone the project into it, create a branch named after the task and summary, and push it upstream.
 
 Usage:
 ```
-git create-task TASK_NAME PROJECT_NAME
+git create-task TASK_ID PROJECT_NAME
 ```
 Behavior:
-- Creates a subdirectory named `TASK_NAME/` and `cd`s into it.
+- Looks up the task summary via Atlassian CLI (`acli`) and composes a branch/directory name of the form `TASK_ID.SUMMARY` (non‑alphanumeric punctuation removed; spaces/underscores stripped).
+- Creates a subdirectory named `TASK_ID.SUMMARY/` and `cd`s into it.
 - Runs `git cwc PROJECT_NAME` to set up the repo (requires your local `git cwc` helper).
-- Inside the project, creates and pushes branch `TASK_NAME`.
+- Inside the project, creates and pushes branch `TASK_ID.SUMMARY` and sets upstream.
 
 ### git get
 Fetch a branch from a remote (default `origin`) and switch to it.
