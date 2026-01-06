@@ -4,7 +4,10 @@ shopt -s inherit_errexit
 
 # create pr
 
-gh pr create --fill
+git push
+gh pr create --fill --head="$(git branch --show-current)"
+
+# shellcheck disable=SC2155
 readonly PR_URL="$(gh pr view --json url --jq .url)"
 
 "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
