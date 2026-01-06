@@ -50,10 +50,11 @@ readonly project="$2"
 summary="$(acli jira workitem view "${task}" --fields=summary --json | jq '.fields.summary' | sed -e "s|[[:punct:]]||g" -e 's| |_|g')"
 readonly summary
 
+readonly dir="${task}꞉${summary}"
 readonly branch="${task}.${summary}"
 
-mkdir -p "${branch}"
-cd "${branch}"
+mkdir -p "${dir}"
+cd "${dir}"
 git cwc "${project}"
 
 (
