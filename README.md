@@ -21,6 +21,7 @@ These scripts are intended to be placed somewhere on your PATH (e.g., `~/bin`) w
 The repository includes a sample Git config (see `.gitconfig`) that defines handy `git` aliases wired to these scripts and a few useful Git shortcuts. Below is a quick reference of the aliases and what they do:
 
 - `aliases` → `git config --get-regexp alias` — List all configured aliases.
+- `bud` → `git-bud.sh` — Init or create a namespaced feature branch (see "git sprout").
 - `destash` → `git stash pop` — Apply the most recent stash and drop it.
 - `cb` → `git-cb.sh` — Switch to a branch (see "git cb").
 - `clone-or-pull` → `git-clone-or-pull.sh` — Clone if missing, otherwise pull (see "git clone-or-pull").
@@ -42,7 +43,6 @@ The repository includes a sample Git config (see `.gitconfig`) that defines hand
 - `shear` → `git-shear.sh` — Force-delete local branches (see "git shear").
 - `snapshot` → `git-snapshot.sh` — Quick working snapshot using stash (see "git snapshot").
 - `sow` → `git push` — Push the current branch.
-- `sprout` → `git-sprout.sh` — Init or create a namespaced feature branch (see "git sprout").
 - `uncommit` → `git reset HEAD^ --` — Undo last commit, keep changes in working tree.
 - `unstage` → `git reset -q HEAD --` — Unstage changes, keep working tree as-is.
 - `upstream-set` → `github-upstream-set.sh` — Helper to set upstream remotes (requires your local script).
@@ -50,6 +50,17 @@ The repository includes a sample Git config (see `.gitconfig`) that defines hand
 To use these, you can copy relevant entries into your global `~/.gitconfig`, or include this repo’s `.gitconfig` from your own config. Ensure the scripts are on your `PATH` without the `.sh` suffix as noted below.
 
 ## Scripts
+
+### git bud
+Initialize a new repo (if outside a work tree) or create a namespaced feature branch.
+
+Usage:
+```
+git bud FEATURE_NAME
+```
+Behavior:
+- If not in a git work tree: `git init` (default branch is taken from your global `init.defaultBranch`).
+- Else: creates and switches to branch `FEATURE_NAME`.
 
 ### git cb
 Switch to a branch.
@@ -201,17 +212,6 @@ Usage:
 git snapshot [STASH_OPTS…]
 ```
 - Runs `git stash push` with the provided options, then `git stash apply`.
-
-### git sprout
-Initialize a new repo (if outside a work tree) or create a namespaced feature branch.
-
-Usage:
-```
-git sprout FEATURE_NAME
-```
-Behavior:
-- If not in a git work tree: `git init` (default branch is taken from your global `init.defaultBranch`).
-- Else: creates and switches to branch `${USER}/FEATURE_NAME`.
 
 ---
 

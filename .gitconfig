@@ -1,5 +1,6 @@
 [alias]
 	aliases = "config --get-regexp alias"
+	bud = "!git-bud.sh"
 	destash = "stash pop"
 	cb = "!git-cb.sh"
 	clone-or-pull = "!git-clone-or-pull.sh"
@@ -21,7 +22,6 @@
 	shear = "!git-shear.sh"
 	snapshot = "!git-snapshot.sh"
 	sow = push
-	sprout = "!git-sprout.sh"
 	uncommit = "reset HEAD^ --"
 	unstage = "reset -q HEAD --"
 	upstream-set = "!github-upstream-set.sh"
