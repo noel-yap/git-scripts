@@ -1,0 +1,8 @@
+# shellcheck shell=sh
+
+init_repo() {
+  git init
+  touch file
+  git add file
+  git commit -m 'initial'
+}

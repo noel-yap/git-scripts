@@ -1,8 +1,6 @@
-#!/bin/bash
-
-set -e
+#!/opt/homebrew/bin/bash -eu
 set -o pipefail
-set -u
+shopt -s inherit_errexit
 
 if ! git diff --cached --exit-code; then
   echo ERROR: Uncommitted changes. Exiting. >&2
@@ -20,11 +18,11 @@ else
   range="${branch}~..${branch}"
 fi
 
-commits=($(git log --pretty=format:"%h" "${range}" | tac))
-echo "grafting ${commits[@]}"
+mapfile -t commits < <(git log --pretty=format:"%h" "${range}" | tac)
+echo "grafting ${commits[*]}"
 
-git branch -D "${branch}"
-git switch -c "${branch}"
+git shear "${branch}"
+git bud "${branch}"
 
 for commit in "${commits[@]}"; do
   git cherry-pick "${commit}"

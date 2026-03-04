@@ -9,4 +9,5 @@ readonly USAGE_STRING="$0 «BRANCH_NAME»"
 BRANCH_NAME="$1"
 shift
 
-git switch -c "${BRANCH_NAME}"
+git mb "${BRANCH_NAME}"
+git cb "${BRANCH_NAME}"

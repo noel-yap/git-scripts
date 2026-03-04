@@ -2,10 +2,10 @@
 
 eval "$(shellspec - -c) exit 1"
 
-Describe 'git-cb.sh'
+Describe 'git-ch-branch.sh'
 
   It 'switches to init.defaultBranch when no arguments are given'
-    set_up_repo_and_workspace_then_call_git_cb() {
+    set_up_repo_and_workspace_then_call_git_ch_branch() {
       {
         git init
         touch file
@@ -15,10 +15,10 @@ Describe 'git-cb.sh'
         git switch -c branch-0
       } >/dev/null 2>&1
 
-      "${PROJECT_ROOT_DIR}/git-cb.sh"
+      "${PROJECT_ROOT_DIR}/git-ch-branch.sh"
     }
 
-    When call in_tempdir set_up_repo_and_workspace_then_call_git_cb
+    When call in_tempdir set_up_repo_and_workspace_then_call_git_ch_branch
 
     The status should be success
     The stdout should be blank
@@ -26,7 +26,7 @@ Describe 'git-cb.sh'
   End
 
   It 'switches to the provided branch name when an argument is given'
-    set_up_repo_and_workspace_then_call_git_cb() {
+    set_up_repo_and_workspace_then_call_git_ch_branch() {
       {
         git init
         touch file
@@ -36,10 +36,10 @@ Describe 'git-cb.sh'
         git branch branch-0
       } >/dev/null 2>&1
 
-      "${PROJECT_ROOT_DIR}/git-cb.sh" branch-0
+      "${PROJECT_ROOT_DIR}/git-ch-branch.sh" branch-0
     }
 
-    When call in_tempdir set_up_repo_and_workspace_then_call_git_cb
+    When call in_tempdir set_up_repo_and_workspace_then_call_git_ch_branch
 
     The status should be success
     The stdout should be blank
@@ -47,7 +47,7 @@ Describe 'git-cb.sh'
   End
 
   It "treats '-' as the previous branch (@{-1})"
-    set_up_repo_and_workspace_then_call_git_cb() {
+    set_up_repo_and_workspace_then_call_git_ch_branch() {
       {
         git init
         touch file
@@ -58,10 +58,10 @@ Describe 'git-cb.sh'
         git switch -c branch-0
       } >/dev/null 2>&1
 
-      "${PROJECT_ROOT_DIR}/git-cb.sh" -
+      "${PROJECT_ROOT_DIR}/git-ch-branch.sh" -
     }
 
-    When call in_tempdir set_up_repo_and_workspace_then_call_git_cb
+    When call in_tempdir set_up_repo_and_workspace_then_call_git_ch_branch
 
     The status should be success
     The stdout should be blank

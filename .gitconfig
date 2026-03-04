@@ -1,8 +1,8 @@
 [alias]
 	aliases = "config --get-regexp alias"
-	bud = "!git-bud.sh"
+	bud = "mcb"
 	destash = "stash pop"
-	cb = "!git-cb.sh"
+	cb = "!git-ch-branch.sh"
 	clone-or-pull = "!git-clone-or-pull.sh"
 	cpr = "!git-create-pr.sh"
 	ct = "!git-create-task.sh \"$@\" && idea \"$1꞉\"*\"/$2\" #"
@@ -10,16 +10,16 @@
 	get = "!git-get.sh"
 	graft = "!git-graft.sh"
 	graph = log --graph --branches --remotes --tags  --format=format:'%Cgreen%h %Creset• %<(75,trunc)%s (%cN, %cr) %Cred%d' --date-order
-	mb = 'branch'
+	mb = "!git-mk-branch.sh"
 	mcb = "!git-mcb.sh"
 	mpr = "!git-merge-pr.sh"
 	push-pull = "!while ! git push; do git pull; done"
 	pwc = "!git-pull-with-cache.sh"
-	rb = "!git-shear.sh"
+	rb = "!git-rm-branch.sh"
 	reap = "!git-reap.sh"
 	rmcb = "!git-rmcb.sh"
 	rpr = "!idea \"$(git-review-pr.sh \"$@\" | tee /dev/tty | grep -E \"^${HOME}/.*/code-review\" | tail -n 1)\" #"
-	shear = "!git-shear.sh"
+	shear = "rb"
 	snapshot = "!git-snapshot.sh"
 	sow = push
 	uncommit = "reset HEAD^ --"

@@ -32,3 +32,6 @@ spec_helper_configure() {
 
 # shellcheck source=../external/bash-mock/mock-first-with-rest.shlib
 . "${PROJECT_ROOT_DIR}/external/bash-mock/mock-first-with-rest.shlib"
+
+# shellcheck source=repo.shlib
+. "${PROJECT_ROOT_DIR}/spec/repo.shlib"
