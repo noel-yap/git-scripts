@@ -19,7 +19,7 @@
 	reap = "!git-reap.sh"
 	rmcb = "!git-rmcb.sh"
 	rpr = "!idea \"$(git-review-pr.sh \"$@\" | tee /dev/tty | grep -E \"^${HOME}/.*/code-review\" | tail -n 1)\" #"
-	shear = "rb"
+	sever = "rb"
 	snapshot = "!git-snapshot.sh"
 	sow = push
 	uncommit = "reset HEAD^ --"

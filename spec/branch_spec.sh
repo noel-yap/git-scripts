@@ -137,6 +137,29 @@ Describe 'branch.shlib'
       The stdout should equal 'feat.ure'
     End
 
+    It 'does not return branches whose parent only prefix-matches'
+      set_up_and_call() {
+        {
+          init_repo
+          PATH="${PROJECT_ROOT_DIR}:${PATH}" \
+            GIT_CONFIG_GLOBAL="${PROJECT_ROOT_DIR}/.gitconfig" \
+            git bud feature
+          git switch main
+          git checkout -b main-extra
+          PATH="${PROJECT_ROOT_DIR}:${PATH}" \
+            GIT_CONFIG_GLOBAL="${PROJECT_ROOT_DIR}/.gitconfig" \
+            git bud other
+        } >/dev/null 2>&1
+
+        get_children_branches main
+      }
+
+      When call in_tempdir set_up_and_call
+      The status should be success
+      The stdout should equal 'feature'
+      The stdout should not include 'other'
+    End
+
     It 'does not return grandchildren'
       set_up_and_call() {
         {

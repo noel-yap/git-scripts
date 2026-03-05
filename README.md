@@ -36,11 +36,11 @@ The repository includes a sample Git config (see `.gitconfig`) that defines hand
 - `mpr` → `git-merge-pr.sh` — Merge the current PR via `gh` (see "git merge-pr").
 - `push-pull` → `while ! git push; do git pull; done` — Keep trying to push, pulling if needed.
 - `pwc` → `git-pull-with-cache.sh` — Update a mirror-backed repo and pull default branch (see "git pull-with-cache").
-- `rb` → `git-shear.sh` — Force-delete local branches (name is historical; see "git shear").
+- `rb` → `git-sever.sh` — Force-delete local branches (name is historical; see "git sever").
 - `reap` → `git-reap.sh` — Update cache, rebase on trunk (see "git reap").
 - `rmcb` → `git-rmcb.sh` — Remove and recreate a branch (see "git rmcb").
 - `rpr` → open the workspace created by `git-review-pr.sh` in IDEA — Review a PR locally (requires `idea`).
-- `shear` → `git-shear.sh` — Force-delete local branches (see "git shear").
+- `sever` → `git-sever.sh` — Force-delete local branches (see "git sever").
 - `snapshot` → `git-snapshot.sh` — Quick working snapshot using stash (see "git snapshot").
 - `sow` → `git push` — Push the current branch.
 - `uncommit` → `git reset HEAD^ --` — Undo last commit, keep changes in working tree.
@@ -49,18 +49,84 @@ The repository includes a sample Git config (see `.gitconfig`) that defines hand
 
 To use these, you can copy relevant entries into your global `~/.gitconfig`, or include this repo’s `.gitconfig` from your own config. Ensure the scripts are on your `PATH` without the `.sh` suffix as noted below.
 
+## Branch stack workflow
+
+`git bud` and `git graft` work together to maintain a stack of branches where each branch builds on its parent. This is useful when you have dependent features that each need their own PR, or when you want to keep work-in-progress changes isolated while still building on each other.
+
+### Setting up a branch stack
+
+Starting from `main`, create a chain of branches with `git bud`. Each call records the current HEAD as the union point — the commit where the child branch diverges from its parent.
+
+```
+git cb main
+git bud feature          # create feature off main; record union = HEAD
+# make commits on feature…
+git bud subfeature       # create subfeature off feature; record union = HEAD
+# make commits on subfeature…
+```
+
+The resulting history looks like:
+
+```
+main:       A
+             \
+feature:      B - C
+                   \
+subfeature:         D - E
+```
+
+### Updating a parent branch
+
+When `main` gets new commits, grafting replays the branch's commits on top of the updated parent. From `main` after it has advanced:
+
+```
+git cb main
+git graft feature        # replay feature's commits onto updated main;
+                         # then recursively replay subfeature onto updated feature
+```
+
+`git graft feature`:
+1. Tags `feature`'s current tip as `feature۔original` (safety restore point).
+2. Deletes and recreates `feature` from the current `main` HEAD.
+3. Cherry-picks each commit from the original `feature` range onto the new `feature`.
+4. Recursively calls `git graft` on any child branches (e.g. `subfeature`), cascading the update down the stack.
+5. Removes the safety tag.
+
+### Grafting all children at once
+
+When you're on a parent branch and want to update all of its direct children in one step:
+
+```
+git cb main
+git graft                # graft all branches whose parent is main
+```
+
+### Resolving conflicts during a graft
+
+If a graft runs into conflicts, the graft pauses just like a normal cherry-pick would. Resolve the conflict as usual, then continue the graft and cascade the update down the rest of the stack:
+
+```
+# resolve conflicts in your editor…
+git add «resolved-files»
+git cherry-pick --continue      # resume the in-progress cherry-pick
+git cb «root-branch»            # switch back to the branch you grafted onto
+git graft                       # cascade the update to all child branches
+```
+
+The safety tag (e.g. `feature۔original`) left behind by the failed graft lets you recover the original branch tip if needed.
+
 ## Scripts
 
 ### git bud
-Initialize a new repo (if outside a work tree) or create a namespaced feature branch.
+Initialize a new repo (if outside a work tree) or create a sub-branch off the current branch.
 
 Usage:
 ```
-git bud FEATURE_NAME
+git bud «FEATURE_NAME»
 ```
 Behavior:
 - If not in a git work tree: `git init` (default branch is taken from your global `init.defaultBranch`).
-- Else: creates and switches to branch `FEATURE_NAME`.
+- Else: creates and switches to branch `«FEATURE_NAME»`, recording the current branch as its parent and the current HEAD as its union point (used by `git graft`).
 
 ### git cb
 Switch to a branch.
@@ -130,15 +196,18 @@ git get [REMOTE] BRANCH
 ```
 
 ### git graft
-Recreate a branch by cherry‑picking a range of commits onto a fresh branch of the same name. Requires a clean index (no staged changes).
+Recreate a branch (or all child branches) by propagating changes onto the current branch. Requires a clean index (no staged changes).
 
 Usage:
 ```
-git graft BRANCH
-git graft LOWER..UPPER
+git graft
+git graft «BRANCH»
+git graft «LOWER»..«UPPER»
 ```
-- If given `BRANCH`, picks commits from `BRANCH~..BRANCH` in chronological order.
-- Deletes and recreates the branch, then cherry‑picks each commit.
+Behavior:
+- No args: recursively grafts all child branches of the current branch (branches whose `branch.«name».parent` config matches the current branch). Errors if no child branches are found when called directly; warns if called recursively and a branch has no children.
+- `«BRANCH»`: cherry‑picks commits in the range `«branch.«BRANCH».union»..«BRANCH»` in chronological order onto the current branch. Tags the original tip before grafting and recursively grafts any children of `«BRANCH»` afterwards. Requires `branch.«BRANCH».union` to be set (use `git bud` to create branches so this is set automatically). Errors if no union is found.
+- `«LOWER»..«UPPER»`: cherry‑picks the explicit open-closed commit range onto the current branch with no branch metadata required.
 
 ### git mcb
 Make and checkout a new branch.
@@ -199,14 +268,14 @@ Usage:
 ```
 git rmcb BRANCH
 ```
-- Internally runs `git shear BRANCH` then `git mcb BRANCH`.
+- Internally runs `git sever BRANCH` then `git mcb BRANCH`.
 
-### git shear
+### git sever
 Force‑delete one or more local branches.
 
 Usage:
 ```
-git shear BRANCH [BRANCH…]
+git sever BRANCH [BRANCH…]
 ```
 
 ### git snapshot

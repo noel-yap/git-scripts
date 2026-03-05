@@ -13,5 +13,5 @@ get_parent_branch() {
 get_children_branches() {
   local -r _branch="$1"
 
-  (git config --get-regexp '^branch\..*\.parent' "${_branch}" || true) | sed -E 's|^branch\.(.*)\.parent .*|\1|'
+  (git config --get-regexp '^branch\..*\.parent' "^${_branch}$" || true) | sed -E 's|^branch\.(.*)\.parent .*|\1|'
 }

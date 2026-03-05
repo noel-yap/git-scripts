@@ -15,4 +15,4 @@ else
   BRANCH_NAME="$(git config --get init.defaultBranch)"
 fi
 
-git switch "${BRANCH_NAME}"
+git switch -- "${BRANCH_NAME}"

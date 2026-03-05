@@ -27,13 +27,13 @@ if [[ $# -eq 0 ]]; then
       echo "WARNING: No child branches found for '${cwb}'. If this is unexpected, use \`git bud\` to create sub-branches." >&2
     fi
   fi
-  for branch in "${child_branches[@]}"; do
+  for child_branch in "${child_branches[@]}"; do
     (
       cwb="$(git branch --show-current)"
       # shellcheck disable=SC2064
       trap "git switch -- '${cwb}'" EXIT
 
-      git graft "${branch}"
+      git graft "${child_branch}"
     )
   done
 else
