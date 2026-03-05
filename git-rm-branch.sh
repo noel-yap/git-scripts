@@ -4,4 +4,4 @@ set -e
 set -o pipefail
 set -u
 
-git branch -D "$@"
+git branch -D -- "$@"

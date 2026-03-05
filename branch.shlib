@@ -1,0 +1,17 @@
+# shellcheck shell=bash
+
+# get_parent_branch BRANCH — prints the parent branch of BRANCH.
+# Reads branch.BRANCH.parent from git config.
+get_parent_branch() {
+  local -r _branch="$1"
+
+  git config "branch.${_branch}.parent"
+}
+
+# get_children_branches BRANCH — prints each branch whose parent is BRANCH, one per line.
+# Scans branch.*.parent entries in git config and extracts matching branch names.
+get_children_branches() {
+  local -r _branch="$1"
+
+  (git config --get-regexp '^branch\..*\.parent' "^${_branch}$" || true) | sed -E 's|^branch\.(.*)\.parent .*|\1|'
+}

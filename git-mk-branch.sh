@@ -11,7 +11,9 @@ else
   branch="$1"
 
   parent="$(git branch --show-current)"
+  union="$(git rev-parse HEAD)"
 
   git branch "${branch}"
   git config "branch.${branch}.parent" "${parent}"
+  git config "branch.${branch}.union" "${union}"
 fi
