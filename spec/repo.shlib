@@ -1,8 +1,19 @@
 # shellcheck shell=sh
 
+# init_repo — initializes a git repo in the current directory with an initial commit.
 init_repo() {
   git init
   touch file
   git add file
   git commit -m 'initial'
+}
+
+# init_remote — creates a local bare remote named origin and pushes main to it.
+# Sets origin/HEAD so that git rev-parse --abbrev-ref origin/HEAD resolves correctly.
+# Call after init_repo when tests require a remote.
+init_remote() {
+  git init --bare remote.git
+  git remote add origin remote.git
+  git push origin main
+  git symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/main
 }
