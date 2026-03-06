@@ -4,9 +4,9 @@
 	destash = "stash pop"
 	cb = "!git-ch-branch.sh"
 	clone-or-pull = "!git-clone-or-pull.sh"
-	cpr = "!git-create-pr.sh"
 	ct = "!git-create-task.sh \"$@\" && idea \"$1꞉\"*\"/$2\" #"
 	cwc = "!git-clone-with-cache.sh"
+	epr = "!git-edit-pr.sh"
 	get = "!git-get.sh"
 	graft = "!git-graft.sh"
 	graph = log --graph --branches --remotes --tags  --format=format:'%Cgreen%h %Creset• %<(75,trunc)%s (%cN, %cr) %Cred%d' --date-order

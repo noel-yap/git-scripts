@@ -1,0 +1,47 @@
+# shellcheck shell=bash
+
+# shellcheck source=branch.shlib
+. "$(dirname "${BASH_SOURCE[0]}")/branch.shlib"
+
+# edit_pr BRANCH — pushes BRANCH, creates a PR against its parent, and prints the PR URL.
+# Creates the PR idempotently (--fill; ignores error if PR already exists).
+edit_pr() {
+  local -r _branch="$1"
+
+  local -r _parent="$(get_parent_branch "${_branch}")"
+
+  git push -f origin "${_branch}"
+  if ! gh pr create --fill --base="${_parent}" --head="${_branch}"; then
+    gh pr view --json url --jq .url "${_branch}"
+  fi
+}
+
+# edit_parent_prs BRANCH — prints PR URLs from trunk's child up to and including BRANCH.
+# Recursively walks up the parent chain and calls edit_pr on each ancestor before BRANCH.
+edit_parent_prs() {
+  local -r _branch="$1"
+
+  local -r _trunk="$(git rev-parse --abbrev-ref origin/HEAD | cut -d '/' -f 2)"
+  local -r _parent="$(get_parent_branch "${_branch}")"
+  if [[ "${_parent}" != "${_trunk}" ]]; then
+    edit_parent_prs "${_parent}"
+  fi
+
+  edit_pr "${_branch}"
+}
+
+# edit_children_prs BRANCH — prints PR URLs for each direct child of BRANCH, recursively.
+# Calls edit_pr for each child before descending into that child's children.
+edit_children_prs() {
+  local -r _branch="$1"
+
+  local -a _child_branches
+  mapfile -t _child_branches < <(get_children_branches "${_branch}")
+  readonly _child_branches
+
+  for b in "${_child_branches[@]}"; do
+    edit_pr "$b"
+
+    edit_children_prs "$b"
+  done
+}

@@ -7,7 +7,7 @@ These scripts are intended to be placed somewhere on your PATH (e.g., `~/bin`) w
 ## Prerequisites
 - Bash (some scripts use options available in modern Bash; macOS Homebrew Bash is used in a few scripts at `/opt/homebrew/bin/bash`).
 - GitHub CLI `gh` for PR-related commands.
-- macOS Google Chrome for opening PR URLs (used by `git create-pr`).
+- macOS Google Chrome for opening PR URLs (used by `git edit-pr`).
 - Atlassian CLI `acli` and `jq` for `git create-task` (used to fetch and parse task summaries).
 - IntelliJ IDEA command-line launcher `idea` if you use the `ct`/`rpr` aliases to auto-open workspaces.
 - Some scripts rely on environment variables:
@@ -25,9 +25,9 @@ The repository includes a sample Git config (see `.gitconfig`) that defines hand
 - `destash` → `git stash pop` — Apply the most recent stash and drop it.
 - `cb` → `git-cb.sh` — Switch to a branch (see "git cb").
 - `clone-or-pull` → `git-clone-or-pull.sh` — Clone if missing, otherwise pull (see "git clone-or-pull").
-- `cpr` → `git-create-pr.sh` — Create a PR and open it (see "git create-pr").
 - `ct` → `git-create-task.sh "$@" && idea "$1"*"/$2"` — Create a task workspace and open it in IntelliJ IDEA (uses a wildcard to match the created directory; requires `idea` launcher).
 - `cwc` → `git-clone-with-cache.sh` — Clone via local cache (see "git clone-with-cache").
+- `epr` → `git-edit-pr.sh` — Create a PR and open it (see "git edit-pr").
 - `get` → `git-get.sh` — Fetch and switch to a remote branch (see "git get").
 - `graft` → `git-graft.sh` — Recreate a branch by cherry-picking a range (see "git graft").
 - `graph` → pretty `git log --graph` with branches/remotes/tags.
@@ -92,17 +92,6 @@ GIT_DOMAIN=github.com GIT_ORG=my-org git clone-with-cache PROJECT_NAME
 - Clones from the local cache into `./PROJECT_NAME`.
 - Sets push URL to `git@${GIT_DOMAIN}:${GIT_ORG}/${PROJECT_NAME}.git`.
 
-### git create-pr
-Create a GitHub pull request from the current branch and open it in Chrome.
-
-Usage:
-```
-git create-pr
-```
-Requirements:
-- `gh` configured for the repo.
-- macOS Chrome installed at `/Applications/Google Chrome.app` (uses profile `Profile 1`).
-
 ### git create-task
 Create a working directory for a task (including a short summary), clone the project into it, create a branch named after the task and summary, and push it upstream.
 
@@ -115,6 +104,22 @@ Behavior:
 - Creates a subdirectory named `TASK_ID.SUMMARY/` and `cd`s into it.
 - Runs `git cwc PROJECT_NAME` to set up the repo (requires your local `git cwc` helper).
 - Inside the project, creates and pushes branch `TASK_ID.SUMMARY` and sets upstream.
+
+### git edit-pr
+Create GitHub pull requests for the current branch stack and open them all in Chrome.
+
+Usage:
+```
+CHROME_PROFILE='Profile 1' git edit-pr
+```
+Requirements:
+- `gh` configured for the repo.
+- macOS Chrome installed at `/Applications/Google Chrome.app`.
+- `CHROME_PROFILE` environment variable set to your Chrome profile directory name.
+
+Behavior:
+- Creates (or updates) PRs for every ancestor branch between trunk and the current branch, then for every descendant branch.
+- Opens all PR URLs in a single Chrome window in order: ancestors first, current branch, then descendants.
 
 ### git get
 Fetch a branch from a remote (default `origin`) and switch to it.
@@ -217,4 +222,4 @@ git snapshot [STASH_OPTS…]
 
 Tips
 - If you use these frequently, consider adding shell completions or aliases.
-- Adjust Chrome profile or paths in `git create-pr` if needed.
+- Adjust Chrome profile or paths in `git edit-pr` if needed.
