@@ -64,4 +64,87 @@ Describe 'git-mk-branch.sh'
     The stdout should equal 'feature-branch'
   End
 
+  It 'creates a branch with the correct name when --parent option precedes the branch name'
+    set_up_and_call() {
+      {
+        init_repo
+        "${PROJECT_ROOT_DIR}/git-mk-branch.sh" --parent=parent-branch new-branch
+      } >/dev/null 2>&1
+
+      git branch --list new-branch
+    }
+
+    When call in_tempdir set_up_and_call
+
+    The status should be success
+    The stdout should equal '  new-branch'
+  End
+
+  It 'sets branch.parent config to --parent option when provided before branch name'
+    set_up_and_call() {
+      {
+        init_repo
+        git bud other-branch
+        "${PROJECT_ROOT_DIR}/git-mk-branch.sh" --parent=another-branch new-branch
+      } >/dev/null 2>&1
+
+      git config branch.new-branch.parent
+    }
+
+    When call in_tempdir set_up_and_call
+
+    The status should be success
+    The stdout should equal 'another-branch'
+  End
+
+  It 'sets branch.parent config to --parent option when provided after branch name'
+    set_up_and_call() {
+      {
+        init_repo
+        git bud other-branch
+        "${PROJECT_ROOT_DIR}/git-mk-branch.sh" new-branch --parent=another-branch
+      } >/dev/null 2>&1
+
+      git config branch.new-branch.parent
+    }
+
+    When call in_tempdir set_up_and_call
+
+    The status should be success
+    The stdout should equal 'another-branch'
+  End
+
+  It 'sets branch.parent config to current branch when --parent is not provided'
+    set_up_and_call() {
+      {
+        init_repo
+        git bud other-branch
+        "${PROJECT_ROOT_DIR}/git-mk-branch.sh" new-branch
+      } >/dev/null 2>&1
+
+      git config branch.new-branch.parent
+    }
+
+    When call in_tempdir set_up_and_call
+
+    The status should be success
+    The stdout should equal 'other-branch'
+  End
+
+  It 'fails with a message when parent is empty (detached HEAD)'
+    set_up_and_call() {
+      {
+        init_repo
+        git checkout --detach
+      } >/dev/null 2>&1
+
+      "${PROJECT_ROOT_DIR}/git-mk-branch.sh" new-branch
+    }
+
+    When call in_tempdir set_up_and_call
+
+    The status should be failure
+    The stderr should include 'parent must be set; use --parent'
+  End
+
 End

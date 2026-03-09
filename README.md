@@ -21,9 +21,9 @@ These scripts are intended to be placed somewhere on your PATH (e.g., `~/bin`) w
 The repository includes a sample Git config (see `.gitconfig`) that defines handy `git` aliases wired to these scripts and a few useful Git shortcuts. Below is a quick reference of the aliases and what they do:
 
 - `aliases` → `git config --get-regexp alias` — List all configured aliases.
-- `bud` → `git-bud.sh` — Init or create a namespaced feature branch (see "git sprout").
+- `bud` → `git mcb` — Alias for `git mcb`; make and checkout a branch off the current branch.
 - `destash` → `git stash pop` — Apply the most recent stash and drop it.
-- `cb` → `git-cb.sh` — Switch to a branch (see "git cb").
+- `cb` → `git-ch-branch.sh` — Switch to a branch.
 - `clone-or-pull` → `git-clone-or-pull.sh` — Clone if missing, otherwise pull (see "git clone-or-pull").
 - `ct` → `git-create-task.sh "$@" && idea "$1"*"/$2"` — Create a task workspace and open it in IntelliJ IDEA (uses a wildcard to match the created directory; requires `idea` launcher).
 - `cwc` → `git-clone-with-cache.sh` — Clone via local cache (see "git clone-with-cache").
@@ -31,7 +31,7 @@ The repository includes a sample Git config (see `.gitconfig`) that defines hand
 - `get` → `git-get.sh` — Fetch and switch to a remote branch (see "git get").
 - `graft` → `git-graft.sh` — Recreate a branch by cherry-picking a range (see "git graft").
 - `graph` → pretty `git log --graph` with branches/remotes/tags.
-- `mb` → `git branch` — Short alias for listing/managing branches.
+- `mb` → `git-mk-branch.sh` — Make a new branch with parent/union metadata recorded (see "git mcb").
 - `mcb` → `git-mcb.sh` — Make and checkout a new branch (see "git mcb").
 - `mpr` → `git-merge-pr.sh` — Merge the current PR via `gh` (see "git merge-pr").
 - `push-pull` → `while ! git push; do git pull; done` — Keep trying to push, pulling if needed.
@@ -118,15 +118,7 @@ The safety tag (e.g. `feature۔original`) left behind by the failed graft lets y
 ## Scripts
 
 ### git bud
-Initialize a new repo (if outside a work tree) or create a sub-branch off the current branch.
-
-Usage:
-```
-git bud «FEATURE_NAME»
-```
-Behavior:
-- If not in a git work tree: `git init` (default branch is taken from your global `init.defaultBranch`).
-- Else: creates and switches to branch `«FEATURE_NAME»`, recording the current branch as its parent and the current HEAD as its union point (used by `git graft`).
+Alias for `git mcb`. See "git mcb" below.
 
 ### git cb
 Switch to a branch.
@@ -210,12 +202,18 @@ Behavior:
 - `«LOWER»..«UPPER»`: cherry‑picks the explicit open-closed commit range onto the current branch with no branch metadata required.
 
 ### git mcb
-Make and checkout a new branch.
+Initialize a new repo (if outside a work tree) or make and checkout a new branch.
 
 Usage:
 ```
-git mcb BRANCH
+git mcb [--parent=«PARENT»] «BRANCH»
 ```
+Options:
+- `--parent=«PARENT»` — explicitly set the parent branch; can appear before or after `«BRANCH»`. If omitted, defaults to the current branch. Fails with an error if the parent cannot be determined (e.g. detached HEAD).
+
+Behavior:
+- If not in a git work tree: `git init` (default branch taken from `init.defaultBranch`).
+- Else: creates `«BRANCH»` recording `«PARENT»` as its parent and the current HEAD as its union point (used by `git graft`), then switches to it.
 
 ### git merge-pr
 Merge the current pull request using `gh`.

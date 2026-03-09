@@ -6,8 +6,14 @@ set -u
 
 readonly USAGE_STRING="$0 «BRANCH_NAME»"
 
-BRANCH_NAME="$1"
-shift
+branch=''
+for arg in "$@"; do
+  case "${arg}" in
+    --*) ;;
+    *) branch="${arg}" ;;
+  esac
+done
+readonly branch
 
-git mb "${BRANCH_NAME}"
-git cb "${BRANCH_NAME}"
+git mb "$@"
+git cb "${branch}"
