@@ -209,7 +209,7 @@ Usage:
 git mcb [--parent=«PARENT»] «BRANCH»
 ```
 Options:
-- `--parent=«PARENT»` — explicitly set the parent branch; can appear before or after `«BRANCH»`. If omitted, defaults to the current branch. Fails with an error if the parent cannot be determined (e.g. detached HEAD).
+- `--parent=«PARENT»` — explicitly set the parent branch. Use `--parent=TRUNK` to resolve the parent to `init.defaultBranch`. If omitted, defaults to the current branch. Fails with an error if the parent cannot be determined (e.g. detached HEAD).
 
 Behavior:
 - If not in a git work tree: `git init` (default branch taken from `init.defaultBranch`).

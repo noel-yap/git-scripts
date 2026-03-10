@@ -23,12 +23,14 @@ Describe 'git-mk-branch.sh'
       } >/dev/null 2>&1
 
       git branch --list new-branch
+      git config branch.new-branch.parent
     }
 
     When call in_tempdir set_up_repo_and_workspace_then_call_git_mk_branch
 
     The status should be success
-    The stdout should include 'new-branch'
+    The line 1 should include 'new-branch'
+    The line 2 should equal 'main'
   End
 
   It 'sets branch.parent config to the current branch'
@@ -72,12 +74,14 @@ Describe 'git-mk-branch.sh'
       } >/dev/null 2>&1
 
       git branch --list new-branch
+      git config branch.new-branch.parent
     }
 
     When call in_tempdir set_up_and_call
 
     The status should be success
-    The stdout should equal '  new-branch'
+    The line 1 should equal '  new-branch'
+    The line 2 should equal 'parent-branch'
   End
 
   It 'sets branch.parent config to --parent option when provided before branch name'
@@ -129,6 +133,23 @@ Describe 'git-mk-branch.sh'
 
     The status should be success
     The stdout should equal 'other-branch'
+  End
+
+  It 'sets branch.parent config to init.defaultBranch when --parent=TRUNK'
+    set_up_and_call() {
+      {
+        init_repo
+        git config init.defaultBranch trunk-branch
+        "${PROJECT_ROOT_DIR}/git-mk-branch.sh" --parent=TRUNK new-branch
+      } >/dev/null 2>&1
+
+      git config branch.new-branch.parent
+    }
+
+    When call in_tempdir set_up_and_call
+
+    The status should be success
+    The stdout should equal 'trunk-branch'
   End
 
   It 'fails with a message when parent is empty (detached HEAD)'

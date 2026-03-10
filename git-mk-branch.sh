@@ -12,6 +12,9 @@ else
   branch=''
   for arg in "$@"; do
     case "${arg}" in
+      --parent=TRUNK)
+        parent="$(git config init.defaultBranch)"
+        ;;
       --parent=*)
         parent="${arg#--parent=}"
         ;;
