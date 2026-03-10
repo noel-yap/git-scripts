@@ -316,6 +316,34 @@ Describe 'git-edit-pr.sh'
     The stdout should include 'https://child-url'
   End
 
+  It 'defaults CHROME_PROFILE to Default when not set'
+    set_up_and_call() {
+      {
+        setup_repo
+
+        mock_first_with_rest gh \
+          'echo https://parent-url' \
+          'echo https://current-url' \
+          'echo https://child-url'
+      } >/dev/null 2>&1
+
+      Google_Chrome() {
+        echo "$@"
+      }
+      # shellcheck disable=SC3045
+      export -f Google_Chrome
+
+      unset CHROME_PROFILE
+      PATH="${PWD}:${PROJECT_ROOT_DIR}:${PATH}" \
+        GIT_CONFIG_GLOBAL="${PROJECT_ROOT_DIR}/.gitconfig" \
+        "${PROJECT_ROOT_DIR}/git-edit-pr.sh" 2>/dev/null
+    }
+
+    When call in_tempdir set_up_and_call
+    The status should be success
+    The stdout should include '--profile-directory=Default'
+  End
+
   It 'calls Google_Chrome even when edit_children_prs fails'
     set_up_and_call() {
       {

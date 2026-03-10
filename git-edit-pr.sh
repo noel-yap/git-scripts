@@ -15,7 +15,7 @@ script_dir="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
 
 @inject "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 
-export CHROME_PROFILE
+export CHROME_PROFILE="${CHROME_PROFILE:-Default}"
 
 readonly branch="$(git branch --show-current)"
 

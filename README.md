@@ -168,12 +168,13 @@ Create GitHub pull requests for the current branch stack and open them all in Ch
 
 Usage:
 ```
+git edit-pr
 CHROME_PROFILE='Profile 1' git edit-pr
 ```
 Requirements:
 - `gh` configured for the repo.
 - macOS Chrome installed at `/Applications/Google Chrome.app`.
-- `CHROME_PROFILE` environment variable set to your Chrome profile directory name.
+- `CHROME_PROFILE` environment variable set to your Chrome profile directory name (defaults to `Default` if not set).
 
 Behavior:
 - Creates (or updates) PRs for every ancestor branch between trunk and the current branch, then for every descendant branch.
