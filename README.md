@@ -51,14 +51,28 @@ To use these, you can copy relevant entries into your global `~/.gitconfig`, or 
 
 ## Branch stack workflow
 
-`git bud` and `git graft` work together to maintain a stack of branches where each branch builds on its parent. This is useful when you have dependent features that each need their own PR, or when you want to keep work-in-progress changes isolated while still building on each other.
+`git bud`, `git graft`, and `git epr` work together to maintain a stack of branches and their corresponding PRs, where each branch builds on its parent. This is useful when you have dependent features that each need their own PR, or when you want to keep work-in-progress changes isolated while still building on each other.
+
+### Core commands
+
+| Command            | What it does                                                                                                        |
+|--------------------|---------------------------------------------------------------------------------------------------------------------|
+| `git bud «BRANCH»` | Create a branch, saving its parent and branch point for use by `git graft` and `git epr`                            |
+| `git graft`        | Propagate changes from the current branch to all descendant branches                                                |
+| `git epr`          | Create or update PRs for the branch stack, setting source and destination branches, then open all PR URLs in Chrome |
+
+### Alias chain
+
+- `git bud` → `git mcb` → `git mb` + `git cb` → `git-mk-branch.sh`
+- `git graft` → `git-graft.sh`
+- `git epr` → `git-edit-pr.sh` (requires `gh`; set `CHROME_PROFILE` if not using the `Default` Chrome profile)
 
 ### Setting up a branch stack
 
-Starting from `main`, create a chain of branches with `git bud`. Each call records the current HEAD as the union point — the commit where the child branch diverges from its parent.
+Starting from some branch, often `main`, or even from a detached HEAD, create a chain of branches with `git bud`. Each call records the current HEAD as the union point — the commit where the child branch diverges from its parent — as well as the parent itself.
 
 ```
-git cb main
+git switch main
 git bud feature          # create feature off main; record union = HEAD
 # make commits on feature…
 git bud subfeature       # create subfeature off feature; record union = HEAD
@@ -75,12 +89,18 @@ feature:      B - C
 subfeature:         D - E
 ```
 
+To create PRs for the stack:
+
+```
+git epr                  # create/update PRs for all branches in the stack (ie all ancestor and descendent branches) and open them in Chrome
+```
+
 ### Updating a parent branch
 
 When `main` gets new commits, grafting replays the branch's commits on top of the updated parent. From `main` after it has advanced:
 
 ```
-git cb main
+git switch main
 git graft feature        # replay feature's commits onto updated main;
                          # then recursively replay subfeature onto updated feature
 ```
@@ -97,7 +117,7 @@ git graft feature        # replay feature's commits onto updated main;
 When you're on a parent branch and want to update all of its direct children in one step:
 
 ```
-git cb main
+git switch main
 git graft                # graft all branches whose parent is main
 ```
 
@@ -109,11 +129,20 @@ If a graft runs into conflicts, the graft pauses just like a normal cherry-pick 
 # resolve conflicts in your editor…
 git add «resolved-files»
 git cherry-pick --continue      # resume the in-progress cherry-pick
-git cb «root-branch»            # switch back to the branch you grafted onto
+git switch «original-branch»    # switch back to the branch you grafted onto
 git graft                       # cascade the update to all child branches
 ```
 
-The safety tag (e.g. `feature۔original`) left behind by the failed graft lets you recover the original branch tip if needed.
+The safety tag (e.g. `feature۔original`) left behind by the failed graft lets you recover the original branch tip if needed. NOTE: the delimiter is NOT a `.`. It is a Unicode character to try to avoid conflicts with other branch and tag names.
+
+### Creating a branch from detached HEAD
+
+When in detached HEAD state (e.g. after `git checkout «SHA»`), use `--parent` to explicitly set the parent branch since there is no current branch to infer it from:
+
+```
+git bud --parent=«PARENT» «BRANCH»
+git bud --parent=TRUNK «BRANCH»   # use init.defaultBranch as parent
+```
 
 ## Scripts
 
