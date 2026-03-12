@@ -1,6 +1,8 @@
-#!/opt/homebrew/bin/bash -eu
+#!/usr/bin/env bash
 # shellcheck disable=SC2034,SC2155
+set -e
 set -o pipefail
+set -u
 shopt -s inherit_errexit
 
 script_dir="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"

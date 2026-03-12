@@ -1,8 +1,8 @@
-#!/bin/bash
-
+#!/usr/bin/env bash
 set -e
 set -o pipefail
 set -u
+shopt -s inherit_errexit
 
 if ! git rev-parse --is-inside-work-tree >/dev/null 2>/dev/null
 then

@@ -1,5 +1,7 @@
-#!/opt/homebrew/bin/bash -eu
+#!/usr/bin/env bash
+set -e
 set -o pipefail
+set -u
 shopt -s inherit_errexit
 
 # git-create-task.sh

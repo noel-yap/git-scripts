@@ -1,8 +1,8 @@
-#!/bin/bash
-
+#!/usr/bin/env bash
 set -e
 set -o pipefail
 set -u
+shopt -s inherit_errexit
 
 readonly USAGE_STRING="$0 [«GIT_OPT»…] «REPO_URL» [«DIR»]"
 
