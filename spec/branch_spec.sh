@@ -7,7 +7,42 @@ eval "$(shellspec - -c) exit 1"
 
 Describe 'branch.shlib'
 
+  Describe 'get_trunk'
+
+    It 'returns the default branch name from origin/HEAD'
+      set_up_and_call() {
+        {
+          init_repo
+          init_remote
+        } >/dev/null 2>&1
+
+        get_trunk
+      }
+
+      When call in_tempdir set_up_and_call
+      The status should be success
+      The stdout should equal 'main'
+    End
+
+  End
+
   Describe 'get_parent_branch'
+
+    It 'returns trunk when branch.parent is not set'
+      set_up_and_call() {
+        {
+          init_repo
+          init_remote
+          git switch -c feature
+        } >/dev/null 2>&1
+
+        get_parent_branch feature
+      }
+
+      When call in_tempdir set_up_and_call
+      The status should be success
+      The stdout should equal 'main'
+    End
 
     It 'returns the parent of a branch'
       set_up_and_call() {

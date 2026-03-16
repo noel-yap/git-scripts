@@ -21,7 +21,7 @@ edit_pr() {
 edit_parent_prs() {
   local -r _branch="$1"
 
-  local -r _trunk="$(git rev-parse --abbrev-ref origin/HEAD | cut -d '/' -f 2)"
+  local -r _trunk="$(get_trunk)"
   local -r _parent="$(get_parent_branch "${_branch}")"
   if [[ "${_parent}" != "${_trunk}" ]]; then
     edit_parent_prs "${_parent}"

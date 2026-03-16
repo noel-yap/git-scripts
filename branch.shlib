@@ -1,11 +1,16 @@
 # shellcheck shell=bash
 
+# get_trunk — prints the default branch name as resolved from origin/HEAD.
+get_trunk() {
+  git rev-parse --abbrev-ref origin/HEAD | cut -d '/' -f 2
+}
+
 # get_parent_branch BRANCH — prints the parent branch of BRANCH.
 # Reads branch.BRANCH.parent from git config.
 get_parent_branch() {
   local -r _branch="$1"
 
-  git config "branch.${_branch}.parent"
+  git config "branch.${_branch}.parent" || get_trunk
 }
 
 # get_children_branches BRANCH — prints each branch whose parent is BRANCH, one per line.
