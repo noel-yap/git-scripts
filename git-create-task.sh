@@ -61,6 +61,6 @@ git cwc "${project}"
 
 (
   cd "${project}"
-  git switch -c "${branch}"
+  git bud "${branch}"
   git push --set-upstream origin "${branch}"
 )
