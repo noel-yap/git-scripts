@@ -122,7 +122,9 @@ Describe 'git-mk-branch.sh'
     set_up_and_call() {
       {
         init_repo
-        git bud other-branch
+        PATH="${PROJECT_ROOT_DIR}:${PATH}" \
+          GIT_CONFIG_GLOBAL="${PROJECT_ROOT_DIR}/.gitconfig" \
+          git bud other-branch
         "${PROJECT_ROOT_DIR}/git-mk-branch.sh" new-branch
       } >/dev/null 2>&1
 
@@ -135,11 +137,12 @@ Describe 'git-mk-branch.sh'
     The stdout should equal 'other-branch'
   End
 
-  It 'sets branch.parent config to init.defaultBranch when --parent=TRUNK'
+  It 'sets branch.parent config to trunk as resolved from origin/HEAD when --parent=TRUNK'
     set_up_and_call() {
       {
         init_repo
-        git config init.defaultBranch trunk-branch
+        init_remote
+        git config init.defaultBranch other-branch
         "${PROJECT_ROOT_DIR}/git-mk-branch.sh" --parent=TRUNK new-branch
       } >/dev/null 2>&1
 
@@ -149,7 +152,7 @@ Describe 'git-mk-branch.sh'
     When call in_tempdir set_up_and_call
 
     The status should be success
-    The stdout should equal 'trunk-branch'
+    The stdout should equal 'main'
   End
 
   It 'fails with a message when parent is empty (detached HEAD)'

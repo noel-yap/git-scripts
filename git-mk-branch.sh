@@ -4,6 +4,9 @@ set -o pipefail
 set -u
 shopt -s inherit_errexit
 
+# shellcheck source=branch.shlib
+. "$(dirname "$(realpath "${BASH_SOURCE[0]}")")/branch.shlib"
+
 if ! git rev-parse --is-inside-work-tree >/dev/null 2>/dev/null
 then
   git init
@@ -13,7 +16,7 @@ else
   for arg in "$@"; do
     case "${arg}" in
       --parent=TRUNK)
-        parent="$(git config init.defaultBranch)"
+        parent="$(get_trunk)"
         ;;
       --parent=*)
         parent="${arg#--parent=}"
