@@ -32,6 +32,23 @@ Describe 'git-edit-pr.shlib'
       The stdout should equal 'https://feature-url'
     End
 
+    It 'does not include git push stdout in output'
+      set_up_and_call() {
+        mock_first_with_rest git \
+          'echo main' \
+          'echo push-stdout'
+        mock_first_with_rest gh \
+          'echo https://feature-url'
+
+        edit_pr feature 2>/dev/null
+      }
+
+      When call in_tempdir set_up_and_call
+      The status should be success
+      The stdout should not include 'push-stdout'
+      The stdout should equal 'https://feature-url'
+    End
+
     It 'outputs URL from gh pr view when PR already exists'
       set_up_and_call() {
         {
