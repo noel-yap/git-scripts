@@ -18,5 +18,4 @@ trunk="$(get_trunk)"
 
 git switch "${trunk}"
 git pull origin "${trunk}"
-git switch "${branch}"
-git rebase "${trunk}"
+git graft "${branch}"
