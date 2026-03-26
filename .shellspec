@@ -4,5 +4,5 @@
 --pattern "spec/**"
 
 ## Default kcov (coverage) options
---kcov
+#--kcov
 --kcov-options "--include-pattern=.sh,.shlib"
