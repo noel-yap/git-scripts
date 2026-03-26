@@ -5,6 +5,9 @@ set -o pipefail
 set -u
 shopt -s inherit_errexit
 
+# shellcheck source=branch.shlib
+. "$(dirname "$(realpath "${BASH_SOURCE[0]}")")/branch.shlib"
+
 readonly remote_pull_url="$(git remote get-url origin)"
 
 (
@@ -12,4 +15,4 @@ readonly remote_pull_url="$(git remote get-url origin)"
   git pull
 )
 
-git pull origin "$(git config --get init.defaultBranch)"
+git pull origin "$(get_trunk)"
