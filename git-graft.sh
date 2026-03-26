@@ -61,10 +61,10 @@ else
 
     range="${union}..${branch}"
 
-    # arabic full stop used as a separator to avoid collisions
-    arabic_full_stop='۔'
+    # fullwidth full stop used as a separator to avoid collisions
+    fullwidth_full_stop='．'
     # tag is useful in case the grafting fails (eg due to a merge conflict)
-    tag="${branch}${arabic_full_stop}original"
+    tag="${branch}${fullwidth_full_stop}original"
 
     before() {
       git tag -f "${tag}"
