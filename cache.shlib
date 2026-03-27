@@ -1,0 +1,11 @@
+# shellcheck shell=bash
+
+# get_cache_dir — prints the value of cache.dir from git config.
+get_cache_dir() {
+  git config cache.dir
+}
+
+# set_cache_dir DIR — sets cache.dir in git config to DIR.
+set_cache_dir() {
+  git config cache.dir "$1"
+}

@@ -7,8 +7,11 @@ shopt -s inherit_errexit
 # shellcheck source=branch.shlib
 . "$(dirname "$(realpath "${BASH_SOURCE[0]}")")/branch.shlib"
 
+# shellcheck source=cache.shlib
+. "$(dirname "$(realpath "${BASH_SOURCE[0]}")")/cache.shlib"
+
 (
-  cd "${HOME}/.cache/grail"
+  cd "$(get_cache_dir)"
 
   git pull
 )
