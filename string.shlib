@@ -1,0 +1,59 @@
+unicodify_punctuation() {
+  local arg="$1"
+
+  readonly fraction_slash='⁄'
+  readonly horizontal_ellipsis='…'
+  readonly fullwidth_question_mark='？'
+  readonly fullwidth_asterisk='＊'
+  readonly en_space=' '
+  readonly fullwidth_semicolon='；'
+  readonly fullwidth_ampersand='＆'
+  readonly fullwidth_vertical_line='｜'
+  readonly fullwidth_left_parenthesis='（'
+  readonly fullwidth_right_parenthesis='）'
+  readonly fullwidth_left_curly_bracket='｛'
+  readonly fullwidth_right_curly_bracket='｝'
+  readonly fullwidth_left_bracket='［'
+  readonly fullwidth_right_bracket='］'
+  readonly fullwidth_less_than_sign='＜'
+  readonly fullwidth_greater_than_sign='＞'
+  readonly fullwidth_tilde='～'
+  readonly fullwidth_dollar_sign='＄'
+  readonly fullwidth_reverse_solidus='＼'
+  readonly fullwidth_apostrophe='＇'
+  readonly fullwidth_quotation_mark='＂'
+  readonly fullwidth_number_sign='＃'
+
+  declare -A punc_subs
+  punc_subs=(
+    ['\/']="${fraction_slash}"
+    ['\.\.*']="${horizontal_ellipsis}"
+    ['\?']="${fullwidth_question_mark}"
+    ['\*']="${fullwidth_asterisk}"
+    [' ']="${en_space}"
+    [';']="${fullwidth_semicolon}"
+    ['&']="${fullwidth_ampersand}"
+    ['|']="${fullwidth_vertical_line}"
+    ['(']="${fullwidth_left_parenthesis}"
+    [')']="${fullwidth_right_parenthesis}"
+    ['{']="${fullwidth_left_curly_bracket}"
+    ['}']="${fullwidth_right_curly_bracket}"
+    ['\[']="${fullwidth_left_bracket}"
+    ['\]']="${fullwidth_right_bracket}"
+    ['<']="${fullwidth_less_than_sign}"
+    ['>']="${fullwidth_greater_than_sign}"
+    ['~']="${fullwidth_tilde}"
+    ['\$']="${fullwidth_dollar_sign}"
+    ["\\\\"]="${fullwidth_reverse_solidus}"
+    ["\'"]="${fullwidth_apostrophe}"
+    ['"']="${fullwidth_quotation_mark}"
+    ['#']="${fullwidth_number_sign}"
+  )
+  readonly punc_subs
+
+  for re in "${!punc_subs[@]}"; do
+    arg="$(sed "s/${re}/${punc_subs[${re}]}/g" <<< "${arg}")"
+  done
+
+  echo "${arg}"
+}

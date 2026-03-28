@@ -46,14 +46,20 @@ shopt -s inherit_errexit
 #     -> creates branch directory ABC-123.<summary>
 #     -> prepares my-repo and creates/pushes branch ABC-123.<summary>
 
+# shellcheck source=string.shlib
+. "$(dirname "$(realpath "${BASH_SOURCE[0]}")")/string.shlib"
+
 readonly task="$1"
 readonly project="$2"
 
-summary="$(acli jira workitem view "${task}" --fields=summary --json | jq '.fields.summary' | sed -e "s|[[:punct:]]||g" -e 's| |_|g')"
-readonly summary
+readonly raw_summary="$(acli jira workitem view "${task}" --fields=summary --json | jq -r '.fields.summary')"
+readonly summary="$(unicodify_punctuation "${raw_summary}")"
 
-readonly dir="${task}꞉${summary}"
-readonly branch="${task}.${summary}"
+readonly fullwidth_colon='：'
+readonly midline_horizontal_ellipsis='⋯'
+readonly task_and_summary="${task}${fullwidth_colon}${summary}"
+readonly dir="${task_and_summary:0:63}${midline_horizontal_ellipsis}"
+readonly branch="${task_and_summary:0:63}${midline_horizontal_ellipsis}"
 
 mkdir -p "${dir}"
 cd "${dir}"
@@ -62,5 +68,6 @@ git cwc "${project}"
 (
   cd "${project}"
   git bud "${branch}"
+  git config "branch.${branch}.jira-task" "${task}"
   git push --set-upstream origin "${branch}"
 )
