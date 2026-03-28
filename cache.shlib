@@ -1,8 +1,9 @@
 # shellcheck shell=bash
 
-# get_cache_dir — prints the value of cache.dir from git config.
+# get_cache_dir — prints the value of cache.dir from git config,
+# falling back to the fetch remote URL if cache.dir is not set.
 get_cache_dir() {
-  git config cache.dir
+  git config cache.dir || git remote get-url origin
 }
 
 # set_cache_dir DIR — sets cache.dir in git config to DIR.
