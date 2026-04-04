@@ -4,6 +4,9 @@ set -o pipefail
 set -u
 shopt -s inherit_errexit
 
+# shellcheck source=branch.shlib
+. "$(dirname "$(realpath "${BASH_SOURCE[0]}")")/branch.shlib"
+
 # shellcheck source=cache.shlib
 . "$(dirname "$(realpath "${BASH_SOURCE[0]}")")/cache.shlib"
 
@@ -29,4 +32,6 @@ git clone-or-pull "${remote_fetch_url}"
   cd "${project}"
   set_cache_dir "${cache_root}/${project}"
   git remote set-url --push origin "${remote_push_url}"
+  git remote add upstream "${remote_push_url}"
+  git fetch upstream "$(get_trunk)"
 )
