@@ -45,7 +45,6 @@ The repository includes a sample Git config (see `.gitconfig`) that defines hand
 - `sow` → `git push` — Push the current branch.
 - `uncommit` → `git reset HEAD^ --` — Undo last commit, keep changes in working tree.
 - `unstage` → `git reset -q HEAD --` — Unstage changes, keep working tree as-is.
-- `upstream-set` → `github-upstream-set.sh` — Helper to set upstream remotes (requires your local script).
 
 To use these, you can copy relevant entries into your global `~/.gitconfig`, or include this repo’s `.gitconfig` from your own config. Ensure the scripts are on your `PATH` without the `.sh` suffix as noted below.
 

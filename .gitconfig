@@ -24,7 +24,6 @@
 	sow = push
 	uncommit = "reset HEAD^ --"
 	unstage = "reset -q HEAD --"
-	upstream-set = "!github-upstream-set.sh"
 [user]
 	name = Noel Yap
 	email = noel.yap+github.com@gmail.com
