@@ -50,10 +50,19 @@ shopt -s inherit_errexit
 . "$(dirname "$(realpath "${BASH_SOURCE[0]}")")/string.shlib"
 
 readonly task="$1"
-readonly project="$2"
 
-readonly raw_summary="$(acli jira workitem view "${task}" --fields=summary --json | jq -r '.fields.summary')"
-readonly summary="$(unicodify_punctuation "${raw_summary}")"
+if [[ "$2" == git@* && "$2" == *.git ]]; then
+  project="${2##*/}"
+  project="${project%.git}"
+else
+  project="$2"
+fi
+readonly project
+
+raw_summary="$(acli jira workitem view "${task}" --fields=summary --json | jq -r '.fields.summary')"
+readonly raw_summary
+summary="$(unicodify_punctuation "${raw_summary}")"
+readonly summary
 
 readonly fullwidth_colon='：'
 readonly midline_horizontal_ellipsis='⋯'
@@ -63,7 +72,7 @@ readonly branch="${task_and_summary:0:63}${midline_horizontal_ellipsis}"
 
 mkdir -p "${dir}"
 cd "${dir}"
-git cwc "${project}"
+git cwc "$2"
 
 (
   cd "${project}"
