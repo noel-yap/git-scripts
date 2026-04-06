@@ -49,6 +49,34 @@ Describe 'git-edit-pr.shlib'
       The stdout should equal 'https://feature-url'
     End
 
+    It 'fetches from upstream remote when upstream remote exists'
+      set_up_and_call() {
+        {
+          init_repo
+          init_remote
+          git init --bare upstream.git
+          git remote add upstream upstream.git
+          git push upstream main
+          PATH="${PROJECT_ROOT_DIR}:${PATH}" \
+            GIT_CONFIG_GLOBAL="${PROJECT_ROOT_DIR}/.gitconfig" \
+            git bud feature
+        } >/dev/null 2>&1
+
+        mock_first_with_rest gh \
+          'echo https://feature-url'
+
+        PATH="${PWD}:${PROJECT_ROOT_DIR}:${PATH}" \
+          GIT_CONFIG_GLOBAL="${PROJECT_ROOT_DIR}/.gitconfig" \
+          edit_pr feature 2>/dev/null
+
+        git rev-parse upstream/main
+      }
+
+      When call in_tempdir set_up_and_call
+      The status should be success
+      The stdout should not be blank
+    End
+
     It 'outputs URL from gh pr view when PR already exists'
       set_up_and_call() {
         {
