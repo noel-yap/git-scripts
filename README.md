@@ -29,7 +29,7 @@ The repository includes a sample Git config (see `.gitconfig`) that defines hand
 - `cwc` → `git-clone-with-cache.sh` — Clone via local cache (see "git clone-with-cache").
 - `epr` → `git-edit-pr.sh` — Create a PR and open it (see "git edit-pr").
 - `get` → `git-get.sh` — Fetch and switch to a remote branch (see "git get").
-- `graft` → `git-graft.sh` — Recreate a branch by cherry-picking a range (see "git graft").
+- `graft` → `git-graft.sh` — Rebase a branch (or all child branches) onto the current branch (see "git graft").
 - `graph` → pretty `git log --graph` with branches/remotes/tags.
 - `mb` → `git-mk-branch.sh` — Make a new branch with parent/union metadata recorded (see "git mcb").
 - `mcb` → `git-mcb.sh` — Make and checkout a new branch (see "git mcb").
@@ -105,11 +105,8 @@ git graft feature        # replay feature's commits onto updated main;
 ```
 
 `git graft feature`:
-1. Tags `feature`'s current tip as `feature۔original` (safety restore point).
-2. Deletes and recreates `feature` from the current `main` HEAD.
-3. Cherry-picks each commit from the original `feature` range onto the new `feature`.
-4. Recursively calls `git graft` on any child branches (e.g. `subfeature`), cascading the update down the stack.
-5. Removes the safety tag.
+1. Rebases `feature`'s commits (those in `union..feature`) onto the current `main` HEAD using `git rebase --onto`.
+2. Recursively calls `git graft` on any child branches (e.g. `subfeature`), cascading the update down the stack.
 
 ### Grafting all children at once
 
@@ -122,17 +119,15 @@ git graft                # graft all branches whose parent is main
 
 ### Resolving conflicts during a graft
 
-If a graft runs into conflicts, the graft pauses just like a normal cherry-pick would. Resolve the conflict as usual, then continue the graft and cascade the update down the rest of the stack:
+If a graft runs into conflicts, the graft pauses just like a normal rebase would. Resolve the conflict as usual, then continue the graft and cascade the update down the rest of the stack:
 
 ```
 # resolve conflicts in your editor…
 git add «resolved-files»
-git cherry-pick --continue      # resume the in-progress cherry-pick
+git rebase --continue           # resume the in-progress rebase
 git switch «original-branch»    # switch back to the branch you grafted onto
 git graft                       # cascade the update to all child branches
 ```
-
-The safety tag (e.g. `feature۔original`) left behind by the failed graft lets you recover the original branch tip if needed. NOTE: the delimiter is NOT a `.`. It is a Unicode character to try to avoid conflicts with other branch and tag names.
 
 ### Creating a branch from detached HEAD
 
@@ -217,7 +212,7 @@ git get [REMOTE] BRANCH
 ```
 
 ### git graft
-Recreate a branch (or all child branches) by propagating changes onto the current branch. Requires a clean index (no staged changes).
+Propagate changes onto the current branch by rebasing a named branch or cherry-picking an explicit commit range. Requires a clean index (no staged changes).
 
 Usage:
 ```
@@ -227,7 +222,7 @@ git graft «LOWER»..«UPPER»
 ```
 Behavior:
 - No args: recursively grafts all child branches of the current branch (branches whose `branch.«name».parent` config matches the current branch). Errors if no child branches are found when called directly; warns if called recursively and a branch has no children.
-- `«BRANCH»`: cherry‑picks commits in the range `«branch.«BRANCH».union»..«BRANCH»` in chronological order onto the current branch. Tags the original tip before grafting and recursively grafts any children of `«BRANCH»` afterwards. Requires `branch.«BRANCH».union` to be set (use `git bud` to create branches so this is set automatically). Errors if no union is found.
+- `«BRANCH»`: rebases commits in the range `«branch.«BRANCH».union»..«BRANCH»` onto the current branch using `git rebase --onto`, then recursively grafts any children of `«BRANCH»`. Requires `branch.«BRANCH».union` to be set (use `git bud` to create branches so this is set automatically). Errors if no union is found.
 - `«LOWER»..«UPPER»`: cherry‑picks the explicit open-closed commit range onto the current branch with no branch metadata required.
 
 ### git mcb

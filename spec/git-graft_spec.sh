@@ -84,31 +84,6 @@ Describe 'git-graft.sh'
     The stdout should include 'WARNING: No child branches found'
   End
 
-  It 'prints grafting message with commit hashes'
-    set_up_and_call() {
-      {
-        init_repo
-
-        PATH="${PROJECT_ROOT_DIR}:${PATH}" \
-          GIT_CONFIG_GLOBAL="${PROJECT_ROOT_DIR}/.gitconfig" \
-          git bud feature
-        echo change > feature-file
-        git add feature-file
-        git commit -m 'feature commit'
-        git switch main
-      } >/dev/null 2>&1
-
-      PATH="${PROJECT_ROOT_DIR}:${PATH}" \
-        GIT_CONFIG_GLOBAL="${PROJECT_ROOT_DIR}/.gitconfig" \
-        "${PROJECT_ROOT_DIR}/git-graft.sh" feature
-    }
-
-    When call in_tempdir set_up_and_call
-    The status should be success
-    The stdout should start with 'grafting '
-    The stderr should not be blank
-  End
-
   It 'grafts a branch onto the current branch by branch name'
     set_up_and_call() {
       {
@@ -251,6 +226,101 @@ Describe 'git-graft.sh'
     The stdout should include 'feature commit 2'
     The stdout should include 'main commit'
     The stdout should include 'initial'
+  End
+
+  It 'grafts feature-2.1 onto feature-1 without including feature-2 changes'
+    set_up_and_call() {
+      {
+        init_repo
+
+        PATH="${PROJECT_ROOT_DIR}:${PATH}" \
+          GIT_CONFIG_GLOBAL="${PROJECT_ROOT_DIR}/.gitconfig" \
+          git bud feature-1
+        echo feature-1-change > feature-1-file
+        git add feature-1-file
+        git commit -m 'feature-1 commit'
+
+        git switch main
+        PATH="${PROJECT_ROOT_DIR}:${PATH}" \
+          GIT_CONFIG_GLOBAL="${PROJECT_ROOT_DIR}/.gitconfig" \
+          git bud feature-2
+        echo feature-2-change > feature-2-file
+        git add feature-2-file
+        git commit -m 'feature-2 commit'
+
+        PATH="${PROJECT_ROOT_DIR}:${PATH}" \
+          GIT_CONFIG_GLOBAL="${PROJECT_ROOT_DIR}/.gitconfig" \
+          git bud feature-2.1
+        echo feature-2.1-change > feature-2.1-file
+        git add feature-2.1-file
+        git commit -m 'feature-2.1 commit'
+
+        git switch feature-1
+        PATH="${PROJECT_ROOT_DIR}:${PATH}" \
+          GIT_CONFIG_GLOBAL="${PROJECT_ROOT_DIR}/.gitconfig" \
+          "${PROJECT_ROOT_DIR}/git-graft.sh" feature-2.1
+      } >/dev/null 2>&1
+
+      git log --oneline feature-2.1
+    }
+
+    When call in_tempdir set_up_and_call
+    The status should be success
+    The stdout should include 'feature-2.1 commit'
+    The stdout should include 'feature-1 commit'
+    The stdout should include 'initial'
+    The stdout should not include 'feature-2 commit'
+  End
+
+  It 'grafts feature-2.1 onto feature-1 without including feature-2.1.1 changes'
+    set_up_and_call() {
+      {
+        init_repo
+
+        PATH="${PROJECT_ROOT_DIR}:${PATH}" \
+          GIT_CONFIG_GLOBAL="${PROJECT_ROOT_DIR}/.gitconfig" \
+          git bud feature-1
+        echo feature-1-change > feature-1-file
+        git add feature-1-file
+        git commit -m 'feature-1 commit'
+
+        git switch main
+        PATH="${PROJECT_ROOT_DIR}:${PATH}" \
+          GIT_CONFIG_GLOBAL="${PROJECT_ROOT_DIR}/.gitconfig" \
+          git bud feature-2
+        echo feature-2-change > feature-2-file
+        git add feature-2-file
+        git commit -m 'feature-2 commit'
+
+        PATH="${PROJECT_ROOT_DIR}:${PATH}" \
+          GIT_CONFIG_GLOBAL="${PROJECT_ROOT_DIR}/.gitconfig" \
+          git bud feature-2.1
+        echo feature-2.1-change > feature-2.1-file
+        git add feature-2.1-file
+        git commit -m 'feature-2.1 commit'
+
+        PATH="${PROJECT_ROOT_DIR}:${PATH}" \
+          GIT_CONFIG_GLOBAL="${PROJECT_ROOT_DIR}/.gitconfig" \
+          git bud feature-2.1.1
+        echo feature-2.1.1-change > feature-2.1.1-file
+        git add feature-2.1.1-file
+        git commit -m 'feature-2.1.1 commit'
+
+        git switch feature-1
+        PATH="${PROJECT_ROOT_DIR}:${PATH}" \
+          GIT_CONFIG_GLOBAL="${PROJECT_ROOT_DIR}/.gitconfig" \
+          "${PROJECT_ROOT_DIR}/git-graft.sh" feature-2.1
+      } >/dev/null 2>&1
+
+      git log --oneline feature-2.1
+    }
+
+    When call in_tempdir set_up_and_call
+    The status should be success
+    The stdout should include 'feature-2.1 commit'
+    The stdout should include 'feature-1 commit'
+    The stdout should include 'initial'
+    The stdout should not include 'feature-2.1.1 commit'
   End
 
   It 'grafts all child branches when a parent has two children'

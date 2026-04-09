@@ -5,6 +5,11 @@ get_trunk() {
   git rev-parse --abbrev-ref origin/HEAD | cut -d '/' -f 2
 }
 
+# get_current_branch — prints the name of the current branch.
+get_current_branch() {
+  git branch --show-current
+}
+
 # get_parent_branch BRANCH — prints the parent branch of BRANCH.
 # Reads branch.BRANCH.parent from git config.
 get_parent_branch() {

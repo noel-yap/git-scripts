@@ -42,14 +42,10 @@ else
   if [[ "$1" == *..* ]]; then
     # graft explicit range
     range="$1"
+    readonly lb="${range%..*}"
+    readonly ub="${range#*..}"
 
-    before() {
-      :
-    }
-
-    after() {
-      :
-    }
+    git cherry-pick --allow-empty --empty='keep' "${lb}..${ub}"
   else
     # graft specific branch
     branch="$1"
@@ -59,34 +55,11 @@ else
       exit 1
     fi
 
-    range="${union}..${branch}"
+    target_branch="$(get_current_branch)"
+    readonly target_branch
+    git switch "${branch}"
+    git rebase --onto "${target_branch}" "${union}"
 
-    # fullwidth full stop used as a separator to avoid collisions
-    fullwidth_full_stop='．'
-    # tag is useful in case the grafting fails (eg due to a merge conflict)
-    tag="${branch}${fullwidth_full_stop}original"
-
-    before() {
-      git tag -f "${tag}"
-      echo "Created tag ${tag} ($(git rev-parse --short HEAD))"
-      git branch -D -- "${branch}"
-      git bud "${branch}"
-    }
-
-    after() {
-      git tag -d "${tag}"
-      GIT_GRAFT_DEPTH=$(( ${GIT_GRAFT_DEPTH:-0} + 1 )) git graft
-    }
+    GIT_GRAFT_DEPTH=$(( ${GIT_GRAFT_DEPTH:-0} + 1 )) git graft
   fi
-
-  mapfile -t commits < <(git log --pretty=tformat:"%h" "${range}" | tac)
-  echo "grafting ${range}: ${commits[*]}"
-
-  before
-
-  for commit in "${commits[@]}"; do
-    git cherry-pick --allow-empty --empty='keep' "${commit}"
-  done
-
-  after
 fi
