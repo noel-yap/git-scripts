@@ -4,6 +4,55 @@ eval "$(shellspec - -c) exit 1"
 
 Describe 'git-create-task.sh'
 
+  It 'restores directory permissions on exit'
+    set_up_and_call() {
+      unset ATLASSIAN_API_TOKEN
+      local tmpdir
+      tmpdir="$(mktemp -d)"
+      (
+        cd "${tmpdir}"
+        mock_first_with_rest git \
+          'mkdir -p my-repo' \
+          'true' \
+          'true' \
+          'true'
+      )
+      chmod 555 "${tmpdir}"
+      (
+        cd "${tmpdir}"
+        PATH="${tmpdir}:${PROJECT_ROOT_DIR}:${PATH}" \
+          "${PROJECT_ROOT_DIR}/git-create-task.sh" ABC-123 my-repo
+      )
+      echo "permissions:$(stat -f %Lp "${tmpdir}")"
+      chmod 700 "${tmpdir}"
+      rm -rf "${tmpdir}"
+    }
+
+    When call set_up_and_call
+    The status should be success
+    The stdout should include 'permissions:555'
+    The stderr should not be blank
+  End
+
+  It 'outputs task_slug/project to stdout'
+    set_up_and_call() {
+      unset ATLASSIAN_API_TOKEN
+      mock_first_with_rest git \
+        'mkdir -p my-repo' \
+        'true' \
+        'true' \
+        'true'
+
+      PATH="${PWD}:${PROJECT_ROOT_DIR}:${PATH}" \
+        "${PROJECT_ROOT_DIR}/git-create-task.sh" ABC-123 my-repo
+    }
+
+    When call in_tempdir set_up_and_call
+    The status should be success
+    The stdout should end with 'ABC-123/my-repo'
+    The stderr should not be blank
+  End
+
   It 'passes the original $2 to git cwc when given a git@ URL'
     set_up_and_call() {
       mock_first_with_rest acli 'echo "{}"'

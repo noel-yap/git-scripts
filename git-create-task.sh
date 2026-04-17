@@ -63,12 +63,26 @@ readonly task_slug
 readonly dir="${task_slug}"
 readonly branch="${task_slug}"
 
+original_dir="${PWD}"
+readonly original_dir
+original_perms="$(stat -f %Lp .)"
+readonly original_perms
+
+_cleanup() {
+  cd "${original_dir}" >/dev/null
+  chmod "${original_perms}" .
+}
+trap _cleanup EXIT
+
+chmod u+w .
 mkdir -p "${dir}"
-cd "${dir}"
+cd "${dir}" >/dev/null
 git cwc "$2"
 
 (
-  cd "${project}"
+  cd "${project}" >/dev/null
   git bud "${branch}"
   git config "branch.${branch}.jira-task" "${task}"
 )
+
+echo "${task_slug}/${project}"
