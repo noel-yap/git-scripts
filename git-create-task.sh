@@ -48,16 +48,13 @@ shopt -s inherit_errexit
 
 # shellcheck source=task.shlib
 . "$(dirname "$(realpath "${BASH_SOURCE[0]}")")/task.shlib"
+# shellcheck source=project.shlib
+. "$(dirname "$(realpath "${BASH_SOURCE[0]}")")/project.shlib"
 
 task="$(get_task "$1")"
 readonly task
 
-if [[ "$2" == git@* && "$2" == *.git ]]; then
-  project="${2##*/}"
-  project="${project%.git}"
-else
-  project="$2"
-fi
+project="$(get_project "$2")"
 readonly project
 
 task_slug="$(get_task_slug "${task}")"

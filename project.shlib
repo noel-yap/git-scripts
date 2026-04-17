@@ -1,0 +1,18 @@
+# shellcheck shell=bash
+
+# get_project ARG — returns the project directory name for ARG.
+# - If ARG is a git@ SSH URL (git@host:org/repo.git), returns the repo name.
+# - Otherwise returns ARG unchanged.
+get_project() {
+  local arg="$1"
+  local project
+
+  if [[ "${arg}" == git@* && "${arg}" == *.git ]]; then
+    project="${arg##*/}"
+    project="${project%.git}"
+  else
+    project="${arg}"
+  fi
+
+  echo "${project}"
+}
