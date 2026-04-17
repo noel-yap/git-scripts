@@ -49,7 +49,10 @@ shopt -s inherit_errexit
 # shellcheck source=string.shlib
 . "$(dirname "$(realpath "${BASH_SOURCE[0]}")")/string.shlib"
 
-readonly task="$1"
+# shellcheck source=task.shlib
+. "$(dirname "$(realpath "${BASH_SOURCE[0]}")")/task.shlib"
+
+readonly task="$(get_task "$1")"
 
 if [[ "$2" == git@* && "$2" == *.git ]]; then
   project="${2##*/}"
@@ -78,5 +81,4 @@ git cwc "$2"
   cd "${project}"
   git bud "${branch}"
   git config "branch.${branch}.jira-task" "${task}"
-  git push --set-upstream origin "${branch}"
 )

@@ -42,7 +42,7 @@ The repository includes a sample Git config (see `.gitconfig`) that defines hand
 - `rpr` → open the workspace created by `git-review-pr.sh` in IDEA — Review a PR locally (requires `idea`).
 - `sever` → `git-sever.sh` — Force-delete local branches (see "git sever").
 - `snapshot` → `git-snapshot.sh` — Quick working snapshot using stash (see "git snapshot").
-- `sow` → `git push` — Push the current branch.
+- `sow` → `git-sow.sh` — Push the current branch; if an `upstream` remote exists, push with `--set-upstream upstream`.
 - `uncommit` → `git reset HEAD^ --` — Undo last commit, keep changes in working tree.
 - `unstage` → `git reset -q HEAD --` — Unstage changes, keep working tree as-is.
 
@@ -178,13 +178,22 @@ Create a working directory for a task (including a short summary), clone the pro
 
 Usage:
 ```
-git create-task TASK_ID PROJECT_NAME
+git create-task TASK_ID PROJECT
+git create-task TASK_ID git@github.com:org/repo.git
+git create-task https://jira.example.com/browse/TASK_ID PROJECT
+git create-task 'https://jira.example.com/board?selectedIssue=TASK_ID' PROJECT
 ```
+Arguments:
+- `TASK_ID` — Jira issue key (e.g. `ABC-123`), or a Jira URL from which the key is extracted:
+  - If the URL has a `selectedIssue` query parameter, that value is used as the task key (takes precedence over a `/browse/` path segment).
+  - Otherwise if the URL path contains `/browse/TASK_ID`, that segment is used.
+- `PROJECT` — name of the project directory to clone into, or a `git@host:org/repo.git` SSH URL from which the repo name is extracted. The full original value is always passed through to `git cwc`.
+
 Behavior:
-- Looks up the task summary via Atlassian CLI (`acli`) and composes a branch/directory name of the form `TASK_ID.SUMMARY` (non‑alphanumeric punctuation removed; spaces/underscores stripped).
-- Creates a subdirectory named `TASK_ID.SUMMARY/` and `cd`s into it.
-- Runs `git cwc PROJECT_NAME` to set up the repo (requires your local `git cwc` helper).
-- Inside the project, creates and pushes branch `TASK_ID.SUMMARY` and sets upstream.
+- Looks up the task summary via Atlassian CLI (`acli`) and composes a branch/directory name of the form `TASK_ID：SUMMARY`.
+- Creates a subdirectory named after the branch and `cd`s into it.
+- Runs `git cwc PROJECT` to set up the repo (requires your local `git cwc` helper).
+- Inside the project, creates and pushes branch `TASK_ID：SUMMARY` and sets upstream.
 
 ### git edit-pr
 Create GitHub pull requests for the current branch stack and open them all in Chrome.
@@ -200,7 +209,8 @@ Requirements:
 - `CHROME_PROFILE` environment variable set to your Chrome profile directory name (defaults to `Default` if not set).
 
 Behavior:
-- Creates (or updates) PRs for every ancestor branch between trunk and the current branch, then for every descendant branch.
+- For each branch in the stack, if an `upstream` remote exists, fetches the parent branch from it before pushing.
+- Creates (or updates) PRs for every ancestor branch between trunk and the current branch, then for every descendant branch, using `git sow` to push each branch.
 - Opens all PR URLs in a single Chrome window in order: ancestors first, current branch, then descendants.
 
 ### git get
@@ -299,6 +309,15 @@ Usage:
 ```
 git sever BRANCH [BRANCH…]
 ```
+
+### git sow
+Push the current branch. If an `upstream` remote exists, push with `--set-upstream upstream HEAD` so the branch tracks the upstream remote.
+
+Usage:
+```
+git sow [GIT_PUSH_OPTS…]
+```
+- Extra options (e.g. `--force-with-lease`) are passed through to `git push`.
 
 ### git snapshot
 Create a quick working snapshot using stash and keep changes applied.

@@ -1,0 +1,22 @@
+# shellcheck shell=bash
+
+# get_task ARG — extracts a Jira task key from ARG.
+# - If ARG is an https URL with a selectedIssue query parameter, returns its value.
+# - If ARG is an https URL with a /browse/ path segment, returns that segment.
+# - Otherwise returns ARG unchanged.
+get_task() {
+  local arg="$1"
+
+  local task
+  if [[ "${arg}" == https://* && "${arg}" == *selectedIssue=* ]]; then
+    task="${arg##*selectedIssue=}"
+    task="${task%%&*}"
+  elif [[ "${arg}" == https://* && "${arg}" == */browse/* ]]; then
+    task="${arg##*/browse/}"
+  else
+    task="${arg}"
+  fi
+  readonly task
+
+  echo "${task}"
+}

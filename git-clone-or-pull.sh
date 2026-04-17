@@ -27,5 +27,6 @@ if [[ -d "${DIR}" ]]; then
     git pull
   )
 else
+  # shellcheck disable=SC2068
   git clone ${GIT_OPTS[@]-} "${REPO_URL}" "${DIR}"
 fi
