@@ -46,9 +46,6 @@ shopt -s inherit_errexit
 #     -> creates branch directory ABC-123.<summary>
 #     -> prepares my-repo and creates/pushes branch ABC-123.<summary>
 
-# shellcheck source=string.shlib
-. "$(dirname "$(realpath "${BASH_SOURCE[0]}")")/string.shlib"
-
 # shellcheck source=task.shlib
 . "$(dirname "$(realpath "${BASH_SOURCE[0]}")")/task.shlib"
 
@@ -63,26 +60,11 @@ else
 fi
 readonly project
 
-if [[ -v ATLASSIAN_API_TOKEN ]]; then
-  raw_summary="$(acli jira workitem view "${task}" --fields=summary --json | jq -r '.fields.summary')"
-  readonly raw_summary
-  summary="$(unicodify_punctuation "${raw_summary}")"
-  readonly summary
-  readonly fullwidth_colon='：'
-  task_and_summary="${task}${fullwidth_colon}${summary}"
-else
-  task_and_summary="${task}"
-fi
-readonly task_and_summary
+task_slug="$(get_task_slug "${task}")"
+readonly task_slug
 
-if (( ${#task_and_summary} >= 64 )); then
-  readonly midline_horizontal_ellipsis='⋯'
-  readonly dir="${task_and_summary:0:63}${midline_horizontal_ellipsis}"
-  readonly branch="${task_and_summary:0:63}${midline_horizontal_ellipsis}"
-else
-  readonly dir="${task_and_summary}"
-  readonly branch="${task_and_summary}"
-fi
+readonly dir="${task_slug}"
+readonly branch="${task_slug}"
 
 mkdir -p "${dir}"
 cd "${dir}"

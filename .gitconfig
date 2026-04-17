@@ -4,7 +4,7 @@
 	destash = "stash pop"
 	cb = "!git-ch-branch.sh"
 	clone-or-pull = "!git-clone-or-pull.sh"
-	ct = "!ct() { . \"$(dirname \"$(realpath \"$(command -v git-create-task.sh)\")\")/task.shlib\"; local t; t=\"$(get_task \"$1\")\"; git-create-task.sh \"$@\" && idea \"${t}：\"*\"/$2\"; }; ct"
+	ct = "!ct() { . \"$(dirname \"$(realpath \"$(command -v git-create-task.sh)\")\")/task.shlib\"; local t; t=\"$(get_task_slug \"$(get_task \"$1\")\")\" ; git-create-task.sh \"$@\" && idea \"${t}/$2\"; }; ct"
 	cwc = "!git-clone-with-cache.sh"
 	epr = "!git-edit-pr.sh"
 	get = "!git-get.sh"

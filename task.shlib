@@ -1,5 +1,8 @@
 # shellcheck shell=bash
 
+# shellcheck source=string.shlib
+. "$(dirname "$(realpath "${BASH_SOURCE[0]}")")/string.shlib"
+
 # get_task ARG — extracts a Jira task key from ARG.
 # - If ARG is an https URL with a selectedIssue query parameter, returns its value.
 # - If ARG is an https URL with a /browse/ path segment, returns that segment.
@@ -19,4 +22,31 @@ get_task() {
   readonly task
 
   echo "${task}"
+}
+
+# get_task_slug TASK — returns a slug for use as a branch/directory name.
+# - If ATLASSIAN_API_TOKEN is set, fetches the Jira summary via acli and builds TASK：SUMMARY.
+# - Otherwise uses TASK alone.
+# - If the result is 64 characters or longer, truncates to 63 characters and appends ⋯.
+get_task_slug() {
+  local _task="$1"
+  local _task_and_summary
+  local midline_horizontal_ellipsis='⋯'
+
+  if [[ -v ATLASSIAN_API_TOKEN ]]; then
+    local raw_summary
+    raw_summary="$(acli jira workitem view "${_task}" --fields=summary --json | jq -r '.fields.summary')"
+    local summary
+    summary="$(unicodify_punctuation "${raw_summary}")"
+    local fullwidth_colon='：'
+    _task_and_summary="${_task}${fullwidth_colon}${summary}"
+  else
+    _task_and_summary="${_task}"
+  fi
+
+  if (( ${#_task_and_summary} >= 64 )); then
+    echo "${_task_and_summary:0:63}${midline_horizontal_ellipsis}"
+  else
+    echo "${_task_and_summary}"
+  fi
 }
