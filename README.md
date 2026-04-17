@@ -8,7 +8,7 @@ These scripts are intended to be placed somewhere on your PATH (e.g., `~/bin`) w
 - Bash (some scripts use options available in modern Bash; macOS Homebrew Bash is used in a few scripts at `/opt/homebrew/bin/bash`).
 - GitHub CLI `gh` for PR-related commands.
 - macOS Google Chrome for opening PR URLs (used by `git edit-pr`).
-- Atlassian CLI `acli` and `jq` for `git create-task` (used to fetch and parse task summaries).
+- Atlassian CLI `acli` and `jq` for `git create-task` (used to fetch and parse task summaries when `ATLASSIAN_API_TOKEN` is set).
 - IntelliJ IDEA command-line launcher `idea` if you use the `ct`/`rpr` aliases to auto-open workspaces.
 - Some scripts rely on environment variables:
   - `GIT_DOMAIN` (e.g., `github.com`)
@@ -174,7 +174,7 @@ GIT_DOMAIN=github.com GIT_ORG=my-org git clone-with-cache PROJECT_NAME
 - Sets push URL to `git@${GIT_DOMAIN}:${GIT_ORG}/${PROJECT_NAME}.git`.
 
 ### git create-task
-Create a working directory for a task (including a short summary), clone the project into it, create a branch named after the task and summary, and push it upstream.
+Create a working directory for a task, clone the project into it, and create a branch named after the task. If `ATLASSIAN_API_TOKEN` is set, the Jira summary is fetched and included in the branch name.
 
 Usage:
 ```
@@ -190,10 +190,10 @@ Arguments:
 - `PROJECT` — name of the project directory to clone into, or a `git@host:org/repo.git` SSH URL from which the repo name is extracted. The full original value is always passed through to `git cwc`.
 
 Behavior:
-- Looks up the task summary via Atlassian CLI (`acli`) and composes a branch/directory name of the form `TASK_ID：SUMMARY`.
+- If `ATLASSIAN_API_TOKEN` is set, looks up the task summary via Atlassian CLI (`acli`) and composes a branch/directory name of the form `TASK_ID：SUMMARY`. Otherwise uses just `TASK_ID`.
 - Creates a subdirectory named after the branch and `cd`s into it.
 - Runs `git cwc PROJECT` to set up the repo (requires your local `git cwc` helper).
-- Inside the project, creates and pushes branch `TASK_ID：SUMMARY` and sets upstream.
+- Inside the project, creates branch `TASK_ID：SUMMARY` (or `TASK_ID` if no token) and sets upstream.
 
 ### git edit-pr
 Create GitHub pull requests for the current branch stack and open them all in Chrome.

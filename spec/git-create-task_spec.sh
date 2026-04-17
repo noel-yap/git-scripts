@@ -128,4 +128,69 @@ Describe 'git-create-task.sh'
     The stderr should not be blank
   End
 
+  It 'uses task key as branch name when ATLASSIAN_API_TOKEN is not set'
+    set_up_and_call() {
+      unset ATLASSIAN_API_TOKEN
+      mock_first_with_rest acli 'echo "UNEXPECTED acli call" >&2; exit 1'
+      mock_first_with_rest jq 'echo "UNEXPECTED jq call" >&2; exit 1'
+      mock_first_with_rest git \
+        'mkdir -p my-repo' \
+        'true' \
+        'true' \
+        'true'
+
+      PATH="${PWD}:${PROJECT_ROOT_DIR}:${PATH}" \
+        "${PROJECT_ROOT_DIR}/git-create-task.sh" 'do-something' 'my-repo'
+    }
+
+    When call in_tempdir set_up_and_call
+    The status should be success
+    The stdout should include 'do-something'
+    The stderr should not be blank
+  End
+
+  It 'omits ellipsis when task_and_summary is shorter than 64 characters'
+    set_up_and_call() {
+      unset ATLASSIAN_API_TOKEN
+      mock_first_with_rest acli 'echo "UNEXPECTED acli call" >&2; exit 1'
+      mock_first_with_rest jq 'echo "UNEXPECTED jq call" >&2; exit 1'
+      mock_first_with_rest git \
+        'mkdir -p my-repo' \
+        'true' \
+        'true' \
+        'true'
+
+      PATH="${PWD}:${PROJECT_ROOT_DIR}:${PATH}" \
+        "${PROJECT_ROOT_DIR}/git-create-task.sh" 'do-something' 'my-repo'
+    }
+
+    When call in_tempdir set_up_and_call
+    The status should be success
+    The stdout should include 'do-something'
+    The stdout should not include '⋯'
+    The stderr should not be blank
+  End
+
+  It 'appends ellipsis when task_and_summary is 64 characters or longer'
+    set_up_and_call() {
+      export ATLASSIAN_API_TOKEN=test
+      mock_first_with_rest acli 'echo "{}"'
+      # 57 a's: ABC-123 (7) + ： (1) + 57 = 65 chars total
+      mock_first_with_rest jq 'cat > /dev/null; echo "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"'
+      mock_first_with_rest git \
+        'mkdir -p my-repo' \
+        'true' \
+        'true' \
+        'true'
+
+      PATH="${PWD}:${PROJECT_ROOT_DIR}:${PATH}" \
+        "${PROJECT_ROOT_DIR}/git-create-task.sh" 'ABC-123' 'my-repo'
+    }
+
+    When call in_tempdir set_up_and_call
+    The status should be success
+    The stdout should include '⋯'
+    The stderr should not be blank
+  End
+
 End

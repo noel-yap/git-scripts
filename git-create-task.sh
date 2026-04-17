@@ -52,7 +52,8 @@ shopt -s inherit_errexit
 # shellcheck source=task.shlib
 . "$(dirname "$(realpath "${BASH_SOURCE[0]}")")/task.shlib"
 
-readonly task="$(get_task "$1")"
+task="$(get_task "$1")"
+readonly task
 
 if [[ "$2" == git@* && "$2" == *.git ]]; then
   project="${2##*/}"
@@ -62,16 +63,26 @@ else
 fi
 readonly project
 
-raw_summary="$(acli jira workitem view "${task}" --fields=summary --json | jq -r '.fields.summary')"
-readonly raw_summary
-summary="$(unicodify_punctuation "${raw_summary}")"
-readonly summary
+if [[ -v ATLASSIAN_API_TOKEN ]]; then
+  raw_summary="$(acli jira workitem view "${task}" --fields=summary --json | jq -r '.fields.summary')"
+  readonly raw_summary
+  summary="$(unicodify_punctuation "${raw_summary}")"
+  readonly summary
+  readonly fullwidth_colon='：'
+  task_and_summary="${task}${fullwidth_colon}${summary}"
+else
+  task_and_summary="${task}"
+fi
+readonly task_and_summary
 
-readonly fullwidth_colon='：'
-readonly midline_horizontal_ellipsis='⋯'
-readonly task_and_summary="${task}${fullwidth_colon}${summary}"
-readonly dir="${task_and_summary:0:63}${midline_horizontal_ellipsis}"
-readonly branch="${task_and_summary:0:63}${midline_horizontal_ellipsis}"
+if (( ${#task_and_summary} >= 64 )); then
+  readonly midline_horizontal_ellipsis='⋯'
+  readonly dir="${task_and_summary:0:63}${midline_horizontal_ellipsis}"
+  readonly branch="${task_and_summary:0:63}${midline_horizontal_ellipsis}"
+else
+  readonly dir="${task_and_summary}"
+  readonly branch="${task_and_summary}"
+fi
 
 mkdir -p "${dir}"
 cd "${dir}"
