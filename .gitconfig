@@ -4,7 +4,7 @@
 	destash = "stash pop"
 	cb = "!git-ch-branch.sh"
 	clone-or-pull = "!git-clone-or-pull.sh"
-	ct = "!bash -c 'idea \"$(git-create-task.sh \"$@\" | tail -n 1)\"' -- \"$@\""
+	ct = "!bash -c 'ide \"$(git-create-task.sh \"$@\" | tail -n 1)\"' -- \"$@\""
 	cwc = "!git-clone-with-cache.sh"
 	epr = "!git-edit-pr.sh"
 	get = "!git-get.sh"
