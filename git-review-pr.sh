@@ -10,10 +10,10 @@ shopt -s inherit_errexit
 readonly GIT_DOMAIN
 readonly GIT_ORG
 
-readonly PR_URL="$(echo "$1"  | sed -E 's|(.*/pull/[^/]+).*|\1|')"
+readonly PR="$(echo "$1" | sed -E 's|.*/pull/([^/?#]+).*|\1|')"
+readonly PR_URL="$(echo "$1" | sed -E 's|(.*/pull/[^/?#]+).*|\1|')"
 
 readonly REPO="$(echo "${PR_URL}" | sed -e "s|^https://${GIT_DOMAIN}/\(.*\)/pull/.*$|\1|")"
-readonly PR="$(basename "${PR_URL}")"
 
 readonly PROJECT="$(basename "${REPO}")"
 readonly BRANCH="$(gh pr view "${PR}" --repo "${REPO}" --json headRefName --template "{{.headRefName}}")"

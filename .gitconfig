@@ -18,7 +18,7 @@
 	rb = "!git-rm-branch.sh"
 	reap = "!git-reap.sh"
 	rmcb = "!git-rmcb.sh"
-	rpr = "!idea \"$(git-review-pr.sh \"$@\" | tee /dev/tty | grep -E \"^${HOME}/.*/code-review\" | tail -n 1)\" #"
+	rpr = "!ide \"$(git-review-pr.sh \"$@\" | tee /dev/tty | grep -E \"^${HOME}/.*/code-review\" | tail -n 1)\" #"
 	sever = "rb"
 	snapshot = "!git-snapshot.sh"
 	sow = push

@@ -9,7 +9,7 @@ These scripts are intended to be placed somewhere on your PATH (e.g., `~/bin`) w
 - GitHub CLI `gh` for PR-related commands.
 - macOS Google Chrome for opening PR URLs (used by `git edit-pr`).
 - Atlassian CLI `acli` and `jq` for `git create-task` (used to fetch and parse task summaries when `ATLASSIAN_API_TOKEN` is set).
-- IntelliJ IDEA command-line launcher `idea` if you use the `ct`/`rpr` aliases to auto-open workspaces.
+- An `ide` command (resolves to e.g. `idea` for IntelliJ IDEA or `ws` for WebStorm) if you use the `ct`/`rpr` aliases to auto-open workspaces.
 - Some scripts rely on environment variables:
   - `GIT_DOMAIN` (e.g., `github.com`)
   - `GIT_ORG` (your organization/user)
@@ -25,7 +25,7 @@ The repository includes a sample Git config (see `.gitconfig`) that defines hand
 - `destash` → `git stash pop` — Apply the most recent stash and drop it.
 - `cb` → `git-ch-branch.sh` — Switch to a branch.
 - `clone-or-pull` → `git-clone-or-pull.sh` — Clone if missing, otherwise pull (see "git clone-or-pull").
-- `ct` → `git-create-task.sh "$@" && idea "$1"*"/$2"` — Create a task workspace and open it in IntelliJ IDEA (uses a wildcard to match the created directory; requires `idea` launcher).
+- `ct` → `git-create-task.sh "$@"` — Create a task workspace and open it via `ide` (uses a wildcard to match the created directory; requires an `ide` command on PATH).
 - `cwc` → `git-clone-with-cache.sh` — Clone via local cache (see "git clone-with-cache").
 - `epr` → `git-edit-pr.sh` — Create a PR and open it (see "git edit-pr").
 - `get` → `git-get.sh` — Fetch and switch to a remote branch (see "git get").
@@ -39,7 +39,7 @@ The repository includes a sample Git config (see `.gitconfig`) that defines hand
 - `rb` → `git-sever.sh` — Force-delete local branches (name is historical; see "git sever").
 - `reap` → `git-reap.sh` — Update cache, rebase on trunk (see "git reap").
 - `rmcb` → `git-rmcb.sh` — Remove and recreate a branch (see "git rmcb").
-- `rpr` → open the workspace created by `git-review-pr.sh` in IDEA — Review a PR locally (requires `idea`).
+- `rpr` → open the workspace created by `git-review-pr.sh` via `ide` — Review a PR locally (requires an `ide` command on PATH).
 - `sever` → `git-sever.sh` — Force-delete local branches (see "git sever").
 - `snapshot` → `git-snapshot.sh` — Quick working snapshot using stash (see "git snapshot").
 - `sow` → `git-sow.sh` — Push the current branch; if an `upstream` remote exists, push with `--set-upstream upstream`.
