@@ -11,21 +11,24 @@ shopt -s inherit_errexit
 #   then pushes that branch to origin and sets the upstream.
 #
 # Synopsis
-#   git-create-task.sh <TASK_KEY> <PROJECT_DIR_NAME>
+#   git-create-task.sh <TASK_KEY> <PROJECT_DIR_NAME>...
 #
 # Arguments
 # - TASK_KEY            Jira key (e.g., ABC-123). Used to derive the branch name.
-# - PROJECT_DIR_NAME    Name of the project directory to work in (must be a subdir
-#                       created by `git cwc` below).
+# - PROJECT_DIR_NAME... One or more project directory names (or git@ SSH URLs). Each is
+#                       cloned via `git cwc` into the task directory and branched
+#                       independently.
 #
 # Behavior
 # - Looks up the Jira task summary via `acli` and sanitizes it to form a readable
 #   branch suffix (punctuation removed, spaces converted to underscores).
 # - Constructs a branch name: "<TASK_KEY>.<sanitized_summary>".
 # - Creates and enters a directory named after the branch.
-# - Runs `git cwc <project>` to clone/checkout a working copy under that directory.
-# - Creates and switches to the new branch in the project repo and pushes it to origin
-#   with upstream tracking.
+# - For each PROJECT, runs `git cwc <project>` to clone/checkout a working copy under
+#   that directory, then creates and switches to the new branch in the project repo and
+#   pushes it to origin with upstream tracking.
+# - Prints one "<task_slug>/<project>" workspace path per project to stdout; git and
+#   diagnostic output goes to stderr.
 #
 # Requirements
 # - `acli` (Atlassian CLI) with Jira access configured.
@@ -42,9 +45,10 @@ shopt -s inherit_errexit
 #   are installed.
 #
 # Example
-#   ./git-create-task.sh ABC-123 my-repo
+#   ./git-create-task.sh ABC-123 my-repo other-repo
 #     -> creates branch directory ABC-123.<summary>
-#     -> prepares my-repo and creates/pushes branch ABC-123.<summary>
+#     -> prepares my-repo and other-repo, creating/pushing branch ABC-123.<summary> in each
+#     -> prints "ABC-123.<summary>/my-repo" and "ABC-123.<summary>/other-repo"
 
 # shellcheck source=task.shlib
 . "$(dirname "$(realpath "${BASH_SOURCE[0]}")")/task.shlib"
@@ -53,9 +57,6 @@ shopt -s inherit_errexit
 
 task="$(get_task "$1")"
 readonly task
-
-project="$(get_project "$2")"
-readonly project
 
 task_slug="$(get_task_slug "${task}")"
 readonly task_slug
@@ -77,12 +78,17 @@ trap _cleanup EXIT
 chmod u+w .
 mkdir -p "${dir}"
 cd "${dir}" >/dev/null
-git cwc "$2"
 
-(
-  cd "${project}" >/dev/null
-  git bud "${branch}"
-  git config "branch.${branch}.jira-task" "${task}"
-)
+for project_arg in "${@:2}"; do
+  project="$(get_project "${project_arg}")"
 
-echo "${task_slug}/${project}"
+  git cwc "${project_arg}" 1>&2
+
+  (
+    cd "${project}" >/dev/null
+    git bud "${branch}" 1>&2
+    git config "branch.${branch}.jira-task" "${task}"
+  )
+
+  echo "${task_slug}/${project}"
+done

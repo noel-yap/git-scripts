@@ -69,8 +69,25 @@ Describe 'git-create-task.sh'
 
     When call in_tempdir set_up_and_call
     The status should be success
-    The stdout should include 'cwc git@github.com:org/my-repo.git'
-    The stderr should not be blank
+    The stdout should end with '/my-repo'
+    The stderr should include 'cwc git@github.com:org/my-repo.git'
+  End
+
+  It 'processes each argument after the task as its own project'
+    set_up_and_call() {
+      unset ATLASSIAN_API_TOKEN
+      # CWD-independent mock: creates the project dir named after the cwc argument.
+      printf '%s\n' '#!/bin/sh' 'case "$1" in cwc) mkdir -p "$2" ;; esac' > git
+      chmod +x git
+
+      PATH="${PWD}:${PROJECT_ROOT_DIR}:${PATH}" \
+        "${PROJECT_ROOT_DIR}/git-create-task.sh" ABC-123 my-repo other-repo
+    }
+
+    When call in_tempdir set_up_and_call
+    The status should be success
+    The line 1 of stdout should equal 'ABC-123/my-repo'
+    The line 2 of stdout should equal 'ABC-123/other-repo'
   End
 
   It 'extracts task key from https Jira browse URL'

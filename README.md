@@ -25,7 +25,7 @@ The repository includes a sample Git config (see `.gitconfig`) that defines hand
 - `destash` → `git stash pop` — Apply the most recent stash and drop it.
 - `cb` → `git-ch-branch.sh` — Switch to a branch.
 - `clone-or-pull` → `git-clone-or-pull.sh` — Clone if missing, otherwise pull (see "git clone-or-pull").
-- `ct` → `git-create-task.sh "$@"` — Create a task workspace and open it via `ide` (uses a wildcard to match the created directory; requires an `ide` command on PATH).
+- `ct` → `git-create-task.sh "$@"` — Create a task workspace for one or more projects and open each created project directory via `ide` (requires an `ide` command on PATH).
 - `cwc` → `git-clone-with-cache.sh` — Clone via local cache (see "git clone-with-cache").
 - `epr` → `git-edit-pr.sh` — Create a PR and open it (see "git edit-pr").
 - `get` → `git-get.sh` — Fetch and switch to a remote branch (see "git get").
@@ -174,11 +174,11 @@ GIT_DOMAIN=github.com GIT_ORG=my-org git clone-with-cache PROJECT_NAME
 - Sets push URL to `git@${GIT_DOMAIN}:${GIT_ORG}/${PROJECT_NAME}.git`.
 
 ### git create-task
-Create a working directory for a task, clone the project into it, and create a branch named after the task. If `ATLASSIAN_API_TOKEN` is set, the Jira summary is fetched and included in the branch name.
+Create a working directory for a task, clone one or more projects into it, and create a branch named after the task in each. If `ATLASSIAN_API_TOKEN` is set, the Jira summary is fetched and included in the branch name.
 
 Usage:
 ```
-git create-task TASK_ID PROJECT
+git create-task TASK_ID PROJECT [PROJECT…]
 git create-task TASK_ID git@github.com:org/repo.git
 git create-task https://jira.example.com/browse/TASK_ID PROJECT
 git create-task 'https://jira.example.com/board?selectedIssue=TASK_ID' PROJECT
@@ -187,13 +187,13 @@ Arguments:
 - `TASK_ID` — Jira issue key (e.g. `ABC-123`), or a Jira URL from which the key is extracted:
   - If the URL has a `selectedIssue` query parameter, that value is used as the task key (takes precedence over a `/browse/` path segment).
   - Otherwise if the URL path contains `/browse/TASK_ID`, that segment is used.
-- `PROJECT` — name of the project directory to clone into, or a `git@host:org/repo.git` SSH URL from which the repo name is extracted. The full original value is always passed through to `git cwc`.
+- `PROJECT…` — one or more project directory names, or `git@host:org/repo.git` SSH URLs from which the repo name is extracted. Each value is passed through to `git cwc` in full, and each project is cloned and branched independently.
 
 Behavior:
 - If `ATLASSIAN_API_TOKEN` is set, looks up the task summary via Atlassian CLI (`acli`) and composes a branch/directory name of the form `TASK_ID：SUMMARY`. Otherwise uses just `TASK_ID`.
 - Creates a subdirectory named after the branch and `cd`s into it.
-- Runs `git cwc PROJECT` to set up the repo (requires your local `git cwc` helper).
-- Inside the project, creates branch `TASK_ID：SUMMARY` (or `TASK_ID` if no token) and sets upstream.
+- For each `PROJECT`, runs `git cwc PROJECT` to set up the repo (requires your local `git cwc` helper), then inside the project creates branch `TASK_ID：SUMMARY` (or `TASK_ID` if no token) and sets upstream.
+- Prints one `TASK_SLUG/PROJECT` workspace path per project to stdout; git and diagnostic output goes to stderr. The `ct` alias opens each printed path in `ide`.
 
 ### git edit-pr
 Create GitHub pull requests for the current branch stack and open them all in Chrome.

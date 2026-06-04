@@ -3,7 +3,7 @@
 	bud = "mcb"
 	cb = "!git-ch-branch.sh"
 	clone-or-pull = "!git-clone-or-pull.sh"
-	ct = "!bash -c 'ide \"$(git-create-task.sh \"$@\" | tail -n 1)\"' -- \"$@\""
+	ct = "!bash -c 'git-create-task.sh \"$@\" | while IFS= read -r workspace; do ide \"${workspace}\"; done' -- \"$@\""
 	cwc = "!git-clone-with-cache.sh"
 	destash = "stash pop"
 	epr = "!git-edit-pr.sh"
