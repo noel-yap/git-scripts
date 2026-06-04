@@ -288,10 +288,10 @@ GIT_DOMAIN=github.com GIT_ORG=my-org git review-pr https://github.com/my-org/pro
 ```
 Requirements:
 - `gh` configured and authenticated.
-- `git clone-or-pull` available on PATH.
+- `git clone-with-cache` (`git cwc`) available on PATH.
 Behavior:
-- Creates a directory named after the PR’s head branch and clones the project inside it.
-- Adds fetch for the PR branch, fetches it, and checks it out.
+- Creates a directory named after the PR’s head branch (with unicode punctuation normalized) and clones the project inside it via `git cwc`, reusing the local cache.
+- Adds fetch for the PR branch on an `upstream` remote, fetches it, and checks it out.
 
 ### git rmcb
 Remove a branch locally (force) and immediately recreate it and switch to it.

@@ -1,0 +1,32 @@
+# shellcheck shell=bash
+
+# get_repo_coordinates ARG — prints eval-able variable assignments for git_domain, git_org,
+# and project derived from ARG.
+# - If ARG is a git@ SSH URL (git@host:org/repo.git), all three are extracted from it.
+# - Otherwise git_domain and git_org come from GIT_DOMAIN and GIT_ORG env vars.
+get_repo_coordinates() {
+  local arg="$1"
+  local git_domain git_org project
+
+  if [[ "${arg}" == git@* && "${arg}" == *.git ]]; then
+    git_domain="${arg#git@}"
+    git_domain="${git_domain%%:*}"
+    git_org="${arg#*:}"
+    git_org="${git_org%/*}"
+    project="${arg##*/}"
+    project="${project%.git}"
+  elif [[ "${arg}" == https://*/*/*/pull/* ]]; then
+    local no_scheme="${arg#https://}"
+    git_domain="${no_scheme%%/*}"
+    local path="${no_scheme#*/}"
+    git_org="${path%%/*}"
+    local rest="${path#*/}"
+    project="${rest%%/*}"
+  else
+    git_domain="${GIT_DOMAIN}"
+    git_org="${GIT_ORG}"
+    project="${arg}"
+  fi
+
+  printf 'git_domain=%q\ngit_org=%q\nproject=%q\n' "${git_domain}" "${git_org}" "${project}"
+}

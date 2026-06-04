@@ -1,11 +1,11 @@
 [alias]
 	aliases = "config --get-regexp alias"
 	bud = "mcb"
-	destash = "stash pop"
 	cb = "!git-ch-branch.sh"
 	clone-or-pull = "!git-clone-or-pull.sh"
 	ct = "!bash -c 'ide \"$(git-create-task.sh \"$@\" | tail -n 1)\"' -- \"$@\""
 	cwc = "!git-clone-with-cache.sh"
+	destash = "stash pop"
 	epr = "!git-edit-pr.sh"
 	get = "!git-get.sh"
 	graft = "!git-graft.sh"
@@ -18,7 +18,7 @@
 	rb = "!git-rm-branch.sh"
 	reap = "!git-reap.sh"
 	rmcb = "!git-rmcb.sh"
-	rpr = "!ide \"$(git-review-pr.sh \"$@\" | tee /dev/tty | grep -E \"^${HOME}/.*/code-review\" | tail -n 1)\" #"
+	rpr = "!ide \"$(git-review-pr.sh \"$@\" | tee /dev/tty | tail -n 1)\" #"
 	sever = "rb"
 	snapshot = "!git-snapshot.sh"
 	sow = push

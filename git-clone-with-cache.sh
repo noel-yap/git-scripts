@@ -10,18 +10,10 @@ shopt -s inherit_errexit
 # shellcheck source=cache.shlib
 . "$(dirname "$(realpath "${BASH_SOURCE[0]}")")/cache.shlib"
 
-if [[ "$1" == git@* && "$1" == *.git ]]; then
-  git_domain="${1#git@}"
-  git_domain="${git_domain%%:*}"
-  git_org="${1#*:}"
-  git_org="${git_org%/*}"
-  project="${1##*/}"
-  project="${project%.git}"
-else
-  git_domain="${GIT_DOMAIN}"
-  git_org="${GIT_ORG}"
-  project="$1"
-fi
+# shellcheck source=git-clone-with-cache.shlib
+. "$(dirname "$(realpath "${BASH_SOURCE[0]}")")/git-clone-with-cache.shlib"
+
+eval "$(get_repo_coordinates "$1")"
 readonly git_domain
 readonly git_org
 readonly project
