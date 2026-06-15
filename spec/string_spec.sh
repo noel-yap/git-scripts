@@ -154,6 +154,12 @@ Describe 'string.shlib'
       The stdout should equal 'a＃b'
     End
 
+    It 'replaces : with fullwidth colon'
+      When call unicodify_punctuation 'a:b'
+      The status should be success
+      The stdout should equal 'a：b'
+    End
+
     It 'replaces multiple punctuation characters'
       When call unicodify_punctuation 'fix/foo: handle (bar) & baz'
       The status should be success

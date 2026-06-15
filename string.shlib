@@ -23,6 +23,7 @@ unicodify_punctuation() {
   readonly fullwidth_apostrophe='＇'
   readonly fullwidth_quotation_mark='＂'
   readonly fullwidth_number_sign='＃'
+  readonly fullwidth_colon='：'
 
   declare -A punc_subs
   punc_subs=(
@@ -48,6 +49,7 @@ unicodify_punctuation() {
     ["\'"]="${fullwidth_apostrophe}"
     ['"']="${fullwidth_quotation_mark}"
     ['#']="${fullwidth_number_sign}"
+    [':']="${fullwidth_colon}"
   )
   readonly punc_subs
 
