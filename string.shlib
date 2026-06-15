@@ -1,31 +1,31 @@
 unicodify_punctuation() {
   local arg="$1"
 
-  readonly fraction_slash='⁄'
-  readonly horizontal_ellipsis='…'
-  readonly fullwidth_question_mark='？'
-  readonly fullwidth_asterisk='＊'
-  readonly en_space=' '
-  readonly fullwidth_semicolon='；'
-  readonly fullwidth_ampersand='＆'
-  readonly fullwidth_vertical_line='｜'
-  readonly fullwidth_left_parenthesis='（'
-  readonly fullwidth_right_parenthesis='）'
-  readonly fullwidth_left_curly_bracket='｛'
-  readonly fullwidth_right_curly_bracket='｝'
-  readonly fullwidth_left_bracket='［'
-  readonly fullwidth_right_bracket='］'
-  readonly fullwidth_less_than_sign='＜'
-  readonly fullwidth_greater_than_sign='＞'
-  readonly fullwidth_tilde='～'
-  readonly fullwidth_dollar_sign='＄'
-  readonly fullwidth_reverse_solidus='＼'
-  readonly fullwidth_apostrophe='＇'
-  readonly fullwidth_quotation_mark='＂'
-  readonly fullwidth_number_sign='＃'
-  readonly fullwidth_colon='：'
+  local -r fraction_slash='⁄'
+  local -r horizontal_ellipsis='…'
+  local -r fullwidth_question_mark='？'
+  local -r fullwidth_asterisk='＊'
+  local -r en_space=' '
+  local -r fullwidth_semicolon='；'
+  local -r fullwidth_ampersand='＆'
+  local -r fullwidth_vertical_line='｜'
+  local -r fullwidth_left_parenthesis='（'
+  local -r fullwidth_right_parenthesis='）'
+  local -r fullwidth_left_curly_bracket='｛'
+  local -r fullwidth_right_curly_bracket='｝'
+  local -r fullwidth_left_bracket='［'
+  local -r fullwidth_right_bracket='］'
+  local -r fullwidth_less_than_sign='＜'
+  local -r fullwidth_greater_than_sign='＞'
+  local -r fullwidth_tilde='～'
+  local -r fullwidth_dollar_sign='＄'
+  local -r fullwidth_reverse_solidus='＼'
+  local -r fullwidth_apostrophe='＇'
+  local -r fullwidth_quotation_mark='＂'
+  local -r fullwidth_number_sign='＃'
+  local -r fullwidth_colon='：'
 
-  declare -A punc_subs
+  local -A punc_subs
   punc_subs=(
     ['\/']="${fraction_slash}"
     ['\.\.*']="${horizontal_ellipsis}"
@@ -53,6 +53,7 @@ unicodify_punctuation() {
   )
   readonly punc_subs
 
+  local re
   for re in "${!punc_subs[@]}"; do
     arg="$(sed "s/${re}/${punc_subs[${re}]}/g" <<< "${arg}")"
   done
