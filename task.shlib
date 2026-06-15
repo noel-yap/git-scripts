@@ -1,5 +1,8 @@
 # shellcheck shell=bash
 
+# shellcheck source=utils.shlib
+. "$(dirname "$(realpath "${BASH_SOURCE[0]}")")/utils.shlib"
+
 # get_task ARG — extracts a Jira task key from ARG.
 # - If ARG is an https URL with a selectedIssue query parameter, returns its value.
 # - If ARG is an https URL with a /browse/ path segment, returns that segment.
@@ -21,6 +24,57 @@ get_task() {
   echo "${task}"
 }
 
+# get_task_summary_from_jira TASK — fetches the Jira summary for TASK via acli.
+# Resolves ATLASSIAN_API_TOKEN via set_key (env, Keychain, 1Password, or AWS
+# Secrets Manager), which acli reads for authentication.
+get_task_summary_from_jira() {
+  local _task="$1"
+
+  set_key ATLASSIAN_API_TOKEN
+
+  acli jira workitem view "${_task}" --fields=summary --json |
+    jq -r '.fields.summary'
+}
+
+# get_task_summary_from_linear TASK — fetches the Linear issue title for TASK
+# via the GraphQL API. Resolves LINEAR_API_KEY via set_key (env, Keychain,
+# 1Password, or AWS Secrets Manager). TASK is the human-readable identifier
+# (e.g. ENG-123), which Linear's `issue` query accepts directly.
+get_task_summary_from_linear() {
+  local _task="$1"
+
+  set_key LINEAR_API_KEY
+
+  # $id/$query are GraphQL and jq variables, intentionally not shell-expanded.
+  # shellcheck disable=SC2016
+  local query='query($id: String!) { issue(id: $id) { title } }'
+  local payload
+  payload="$(jq --null-input \
+    --arg query "${query}" \
+    --arg id "${_task}" \
+    '{query: $query, variables: {id: $id}}')"
+
+  curl --silent --fail \
+    --request POST \
+    --header "Authorization: ${LINEAR_API_KEY}" \
+    --header 'Content-Type: application/json' \
+    --data "${payload}" \
+    https://api.linear.app/graphql |
+    jq -r '.data.issue.title'
+}
+
+# get_task_summary TASK — fetches TASK's summary, trying Linear first and
+# falling back to Jira. Returns the first source that yields a non-empty
+# summary (see coalesce).
+get_task_summary() {
+  local _task="$1"
+
+  coalesce \
+    get_task_summary_from_linear \
+    get_task_summary_from_jira \
+    -- "${_task}"
+}
+
 # get_task_slug TASK — returns a slug for use as a branch/directory name.
 # - If ATLASSIAN_API_TOKEN is set, fetches the Jira summary via acli and builds TASK：SUMMARY.
 # - Otherwise uses TASK alone.
@@ -34,10 +88,10 @@ get_task_slug() {
     # shellcheck source=string.shlib
     . "$(dirname "$(realpath "${BASH_SOURCE[0]}")")/string.shlib"
     local raw_summary
-    raw_summary="$(acli jira workitem view "${_task}" --fields=summary --json | jq -r '.fields.summary')"
+    raw_summary="$(get_task_summary "${_task}")"
     local summary
     summary="$(unicodify_punctuation "${raw_summary}")"
-    local fullwidth_colon='：'
+    local -r fullwidth_colon='：'
     _task_and_summary="${_task}${fullwidth_colon}${summary}"
   else
     _task_and_summary="${_task}"

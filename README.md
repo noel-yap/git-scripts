@@ -8,7 +8,7 @@ These scripts are intended to be placed somewhere on your PATH (e.g., `~/bin`) w
 - Bash (some scripts use options available in modern Bash; macOS Homebrew Bash is used in a few scripts at `/opt/homebrew/bin/bash`).
 - GitHub CLI `gh` for PR-related commands.
 - macOS Google Chrome for opening PR URLs (used by `git edit-pr`).
-- Atlassian CLI `acli` and `jq` for `git create-task` (used to fetch and parse task summaries when `ATLASSIAN_API_TOKEN` is set).
+- Atlassian CLI `acli`, `curl`, and `jq` for `git create-task` (used to fetch task summaries from Linear or Jira when `ATLASSIAN_API_TOKEN` is set). `LINEAR_API_KEY`/`ATLASSIAN_API_TOKEN` may be supplied via the environment, macOS Keychain, 1Password (`op`), or AWS Secrets Manager (`aws`).
 - An `ide` command (resolves to e.g. `idea` for IntelliJ IDEA or `ws` for WebStorm) if you use the `ct`/`rpr` aliases to auto-open workspaces.
 - Some scripts rely on environment variables:
   - `GIT_DOMAIN` (e.g., `github.com`)
@@ -174,7 +174,7 @@ GIT_DOMAIN=github.com GIT_ORG=my-org git clone-with-cache PROJECT_NAME
 - Sets push URL to `git@${GIT_DOMAIN}:${GIT_ORG}/${PROJECT_NAME}.git`.
 
 ### git create-task
-Create a working directory for a task, clone one or more projects into it, and create a branch named after the task in each. If `ATLASSIAN_API_TOKEN` is set, the Jira summary is fetched and included in the branch name.
+Create a working directory for a task, clone one or more projects into it, and create a branch named after the task in each. If `ATLASSIAN_API_TOKEN` is set, the task summary is fetched (from Linear, falling back to Jira) and included in the branch name.
 
 Usage:
 ```
@@ -190,7 +190,7 @@ Arguments:
 - `PROJECT…` — one or more project directory names, or `git@host:org/repo.git` SSH URLs from which the repo name is extracted. Each value is passed through to `git cwc` in full, and each project is cloned and branched independently.
 
 Behavior:
-- If `ATLASSIAN_API_TOKEN` is set, looks up the task summary via Atlassian CLI (`acli`) and composes a branch/directory name of the form `TASK_ID：SUMMARY`. Otherwise uses just `TASK_ID`.
+- If `ATLASSIAN_API_TOKEN` is set, looks up the task summary (from Linear via its GraphQL API, falling back to Jira via `acli`) and composes a branch/directory name of the form `TASK_ID：SUMMARY`. Otherwise uses just `TASK_ID`. The required API credential (`LINEAR_API_KEY` or `ATLASSIAN_API_TOKEN`) is resolved from the environment, macOS Keychain, 1Password, or AWS Secrets Manager.
 - Creates a subdirectory named after the branch and `cd`s into it.
 - For each `PROJECT`, runs `git cwc PROJECT` to set up the repo (requires your local `git cwc` helper), then inside the project creates branch `TASK_ID：SUMMARY` (or `TASK_ID` if no token) and sets upstream.
 - Prints one `TASK_SLUG/PROJECT` workspace path per project to stdout; git and diagnostic output goes to stderr. The `ct` alias opens each printed path in `ide`.

@@ -55,8 +55,15 @@ Describe 'git-create-task.sh'
 
   It 'passes the original $2 to git cwc when given a git@ URL'
     set_up_and_call() {
-      mock_first_with_rest acli 'echo "{}"'
-      mock_first_with_rest jq 'cat > /dev/null; echo "Do stuff"'
+      export ATLASSIAN_API_TOKEN=test LINEAR_API_KEY=test
+      # set_key probes the Keychain first; report the item as absent (exit 44)
+      # so it falls back to the exported env value without real Keychain access.
+      printf '%s\n' '#!/bin/sh' 'exit 44' > security
+      chmod +x security
+      # get_task_summary tries Linear first: stub curl's GraphQL response and
+      # jq (called once to build the payload, then to read the issue title).
+      mock_first_with_rest curl 'echo "{}"'
+      mock_first_with_rest jq 'echo "{}"' 'cat > /dev/null; echo "Do stuff"'
       mock_first_with_rest git \
         'mkdir -p my-repo; echo "git $*"' \
         'true' \
@@ -92,8 +99,15 @@ Describe 'git-create-task.sh'
 
   It 'extracts task key from https Jira browse URL'
     set_up_and_call() {
-      mock_first_with_rest acli 'echo "{}"'
-      mock_first_with_rest jq 'cat > /dev/null; echo "Do stuff"'
+      export ATLASSIAN_API_TOKEN=test LINEAR_API_KEY=test
+      # set_key probes the Keychain first; report the item as absent (exit 44)
+      # so it falls back to the exported env value without real Keychain access.
+      printf '%s\n' '#!/bin/sh' 'exit 44' > security
+      chmod +x security
+      # get_task_summary tries Linear first: stub curl's GraphQL response and
+      # jq (called once to build the payload, then to read the issue title).
+      mock_first_with_rest curl 'echo "{}"'
+      mock_first_with_rest jq 'echo "{}"' 'cat > /dev/null; echo "Do stuff"'
       mock_first_with_rest git \
         'mkdir -p my-repo' \
         'true' \
@@ -113,8 +127,15 @@ Describe 'git-create-task.sh'
 
   It 'extracts task key from selectedIssue query parameter in https URL'
     set_up_and_call() {
-      mock_first_with_rest acli 'echo "{}"'
-      mock_first_with_rest jq 'cat > /dev/null; echo "Do stuff"'
+      export ATLASSIAN_API_TOKEN=test LINEAR_API_KEY=test
+      # set_key probes the Keychain first; report the item as absent (exit 44)
+      # so it falls back to the exported env value without real Keychain access.
+      printf '%s\n' '#!/bin/sh' 'exit 44' > security
+      chmod +x security
+      # get_task_summary tries Linear first: stub curl's GraphQL response and
+      # jq (called once to build the payload, then to read the issue title).
+      mock_first_with_rest curl 'echo "{}"'
+      mock_first_with_rest jq 'echo "{}"' 'cat > /dev/null; echo "Do stuff"'
       mock_first_with_rest git \
         'mkdir -p my-repo' \
         'true' \
@@ -134,8 +155,15 @@ Describe 'git-create-task.sh'
 
   It 'selectedIssue query parameter takes precedence over /browse path'
     set_up_and_call() {
-      mock_first_with_rest acli 'echo "{}"'
-      mock_first_with_rest jq 'cat > /dev/null; echo "Do stuff"'
+      export ATLASSIAN_API_TOKEN=test LINEAR_API_KEY=test
+      # set_key probes the Keychain first; report the item as absent (exit 44)
+      # so it falls back to the exported env value without real Keychain access.
+      printf '%s\n' '#!/bin/sh' 'exit 44' > security
+      chmod +x security
+      # get_task_summary tries Linear first: stub curl's GraphQL response and
+      # jq (called once to build the payload, then to read the issue title).
+      mock_first_with_rest curl 'echo "{}"'
+      mock_first_with_rest jq 'echo "{}"' 'cat > /dev/null; echo "Do stuff"'
       mock_first_with_rest git \
         'mkdir -p my-repo' \
         'true' \
