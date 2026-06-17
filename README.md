@@ -5,6 +5,7 @@ A collection of small Git helper scripts I use for everyday workflows: cloning v
 These scripts are intended to be placed somewhere on your PATH (e.g., `~/bin`) without the `.sh` extension in the command name. Example: invoke `git clone-with-cache`, not `git-clone-with-cache.sh`.
 
 ## Prerequisites
+- Git submodules: this repo vendors helper libraries (e.g. `sh-keyring`, used by `git create-task`) under `external/`. After cloning, run `git submodule update --init` so they are present.
 - Bash (some scripts use options available in modern Bash; macOS Homebrew Bash is used in a few scripts at `/opt/homebrew/bin/bash`).
 - GitHub CLI `gh` for PR-related commands.
 - macOS Google Chrome for opening PR URLs (used by `git edit-pr`).

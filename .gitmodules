@@ -1,4 +1,8 @@
 [submodule "external/bash-mock"]
 	path = external/bash-mock
-	url = git@github.com:noel-yap/bash-mock.git
+	url = https://github.com/noel-yap/bash-mock.git
+	branch = main
+[submodule "external/sh-keyring"]
+	path = external/sh-keyring
+	url = https://github.com/noel-yap/sh-keyring.git
 	branch = main

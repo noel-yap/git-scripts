@@ -1,7 +1,7 @@
 # shellcheck shell=bash
 
-# shellcheck source=utils.shlib
-. "$(dirname "$(realpath "${BASH_SOURCE[0]}")")/utils.shlib"
+# shellcheck source=external/sh-keyring/sh-keyring.shlib
+. "$(dirname "$(realpath "${BASH_SOURCE[0]}")")/external/sh-keyring/sh-keyring.shlib"
 
 # get_task ARG — extracts a Jira task key from ARG.
 # - If ARG is an https URL with a selectedIssue query parameter, returns its value.
