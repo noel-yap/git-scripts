@@ -25,10 +25,15 @@ get_task() {
 }
 
 # get_task_summary_from_jira TASK — fetches the Jira summary for TASK via acli.
-# Resolves ATLASSIAN_API_TOKEN via set_key (env, Keychain, 1Password, or AWS
-# Secrets Manager), which acli reads for authentication.
+# Returns immediately when ATLASSIAN_API_TOKEN is unset. Otherwise resolves the
+# token via set_key (env, Keychain, 1Password, or AWS Secrets Manager), which
+# acli reads for authentication.
 get_task_summary_from_jira() {
   local _task="$1"
+
+  if [[ ! -v ATLASSIAN_API_TOKEN ]]; then
+    return 1
+  fi
 
   set_key ATLASSIAN_API_TOKEN
 
@@ -76,19 +81,18 @@ get_task_summary() {
 }
 
 # get_task_slug TASK — returns a slug for use as a branch/directory name.
-# - If ATLASSIAN_API_TOKEN is set, fetches the Jira summary via acli and builds TASK：SUMMARY.
-# - Otherwise uses TASK alone.
+# - Fetches the task summary (Linear, falling back to Jira) when available and
+#   builds TASK：SUMMARY; otherwise uses TASK alone.
 # - If the result is 64 characters or longer, truncates to 63 characters and appends ⋯.
 get_task_slug() {
   local _task="$1"
   local _task_and_summary
   local midline_horizontal_ellipsis='⋯'
 
-  if [[ -v ATLASSIAN_API_TOKEN ]]; then
-    # shellcheck source=string.shlib
-    . "$(dirname "$(realpath "${BASH_SOURCE[0]}")")/string.shlib"
-    local raw_summary
-    raw_summary="$(get_task_summary "${_task}")"
+  # shellcheck source=string.shlib
+  . "$(dirname "$(realpath "${BASH_SOURCE[0]}")")/string.shlib"
+  local raw_summary
+  if raw_summary="$(get_task_summary "${_task}")"; then
     local summary
     summary="$(unicodify_punctuation "${raw_summary}")"
     local -r fullwidth_colon='：'

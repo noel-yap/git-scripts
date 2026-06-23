@@ -84,7 +84,7 @@ class TestGetTask:
 
 class TestGetTaskSummaryFromJira:
     """get_task_summary_from_jira pipes acli's JSON through jq to read the
-    summary field.
+    summary field when ATLASSIAN_API_TOKEN is set.
     """
 
     def test_returns_summary_field_from_acli_json(self) -> None:
@@ -100,6 +100,17 @@ class TestGetTaskSummaryFromJira:
         )
         assert result.returncode == 0
         assert result.stdout == "Do stuff\n"
+
+    def test_returns_nonzero_when_atlassian_api_token_unset(self) -> None:
+        result = _run(
+            f'source "{SHLIB}"; '
+            "unset ATLASSIAN_API_TOKEN; "
+            "acli() { echo 'should-not-run' >&2; return 1; }; "
+            "get_task_summary_from_jira ABC-123"
+        )
+        assert result.returncode != 0
+        assert result.stdout == ""
+        assert "should-not-run" not in result.stderr
 
 
 class TestGetTaskSummaryFromLinear:
@@ -167,6 +178,18 @@ class TestGetTaskSummary:
         assert result.returncode != 0
         assert result.stdout == ""
 
+    def test_skips_jira_when_atlassian_api_token_unset(self) -> None:
+        result = _run(
+            f'source "{SHLIB}"; '
+            "unset ATLASSIAN_API_TOKEN; "
+            "get_task_summary_from_linear() { return 1; }; "
+            "acli() { echo 'should-not-run' >&2; return 1; }; "
+            "get_task_summary ENG-123"
+        )
+        assert result.returncode != 0
+        assert result.stdout == ""
+        assert "should-not-run" not in result.stderr
+
 
 # A 63-character key sits just under the 64-character truncation threshold; a
 # 64-character key sits just at it.
@@ -175,41 +198,49 @@ _KEY_64 = "x" * 64
 
 
 class TestGetTaskSlug:
-    """get_task_slug builds a branch/directory slug. Without ATLASSIAN_API_TOKEN
-    it uses the key alone; with it, the key is joined to the Jira summary as
-    `TASK：SUMMARY`. Either form is truncated to 63 characters plus `⋯` once it
-    reaches 64 characters.
+    """get_task_slug builds a branch/directory slug. When a task summary is
+    available it joins the key to the summary as `TASK：SUMMARY`; otherwise it
+    uses the key alone. Either form is truncated to 63 characters plus `⋯` once
+    it reaches 64 characters.
     """
 
-    def test_returns_key_unchanged_when_no_token_and_key_is_short(self) -> None:
+    def test_returns_key_unchanged_when_no_summary_available_and_key_is_short(
+        self,
+    ) -> None:
         result = _run(
             f'source "{SHLIB}"; '
-            "unset ATLASSIAN_API_TOKEN; "
+            "get_task_summary() { return 1; }; "
             "get_task_slug do-something"
         )
         assert result.returncode == 0
         assert result.stdout == "do-something\n"
         assert result.stderr == ""
 
-    def test_does_not_truncate_when_no_token_and_key_is_63_characters(self) -> None:
+    def test_does_not_truncate_when_no_summary_available_and_key_is_63_characters(
+        self,
+    ) -> None:
         result = _run(
             f'source "{SHLIB}"; '
-            "unset ATLASSIAN_API_TOKEN; "
+            "get_task_summary() { return 1; }; "
             f"get_task_slug {_KEY_63}"
         )
         assert result.returncode == 0
         assert result.stdout == _KEY_63 + "\n"
 
-    def test_truncates_when_no_token_and_key_is_64_characters(self) -> None:
+    def test_truncates_when_no_summary_available_and_key_is_64_characters(
+        self,
+    ) -> None:
         result = _run(
             f'source "{SHLIB}"; '
-            "unset ATLASSIAN_API_TOKEN; "
+            "get_task_summary() { return 1; }; "
             f"get_task_slug {_KEY_64}"
         )
         assert result.returncode == 0
         assert result.stdout == _KEY_64[:63] + "⋯\n"
 
-    def test_joins_key_and_summary_when_token_set_and_result_is_short(self) -> None:
+    def test_joins_key_and_summary_when_summary_available_and_result_is_short(
+        self,
+    ) -> None:
         result = _run(
             f'source "{SHLIB}"; '
             "get_task_summary() { printf 'Dostuff'; }; "
@@ -219,7 +250,21 @@ class TestGetTaskSlug:
         assert result.stdout == "ABC-123：Dostuff\n"
         assert result.stderr == ""
 
-    def test_truncates_when_token_set_and_result_reaches_64_characters(self) -> None:
+    def test_joins_key_and_linear_summary_when_jira_token_unset(self) -> None:
+        result = _run(
+            f'source "{SHLIB}"; '
+            "unset ATLASSIAN_API_TOKEN; "
+            "export LINEAR_API_KEY=test; "
+            "security() { return 44; }; "
+            "get_task_summary_from_linear() { printf 'LinearSummary'; }; "
+            "get_task_slug ENG-123"
+        )
+        assert result.returncode == 0
+        assert result.stdout == "ENG-123：LinearSummary\n"
+
+    def test_truncates_when_summary_available_and_result_reaches_64_characters(
+        self,
+    ) -> None:
         # ABC-123 (7) + ： (1) + 56 a's = 64 chars -> truncated to 63 + ⋯.
         summary = "a" * 56
         expected = ("ABC-123：" + "a" * 56)[:63] + "⋯"
