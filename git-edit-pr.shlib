@@ -13,7 +13,7 @@ edit_pr() {
   if git remote get-url upstream &>/dev/null; then
     git fetch upstream "${_parent}"
   fi
-  git sow -f origin "${_branch}" >/dev/null
+  git sow -f -u origin "${_branch}" >/dev/null
   if ! gh pr create --fill --base="${_parent}" --head="${_branch}"; then
     gh pr view --json url --jq .url "${_branch}"
   fi
