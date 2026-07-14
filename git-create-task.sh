@@ -14,7 +14,10 @@ shopt -s inherit_errexit
 #   git-create-task.sh <TASK_KEY> <PROJECT_DIR_NAME>...
 #
 # Arguments
-# - TASK_KEY            Jira key (e.g., ABC-123). Used to derive the branch name.
+# - TASK_KEY            Jira or Linear key (e.g., ABC-123), or a URL to the issue
+#                       (Jira /browse/ or ?selectedIssue= URL, or a
+#                       https://linear.app/<workspace>/issue/<KEY>/... URL).
+#                       Used to derive the branch name.
 # - PROJECT_DIR_NAME... One or more project directory names (or git@ SSH URLs). Each is
 #                       cloned via `git cwc` into the task directory and branched
 #                       independently.
@@ -55,7 +58,7 @@ shopt -s inherit_errexit
 # shellcheck source=project.shlib
 . "$(dirname "$(realpath "${BASH_SOURCE[0]}")")/project.shlib"
 
-task="$(get_task "$1")"
+task="$(get_task_id "$1")"
 readonly task
 
 task_slug="$(get_task_slug "${task}")"
@@ -87,7 +90,7 @@ for project_arg in "${@:2}"; do
   (
     cd "${project}" >/dev/null
     git bud "${branch}" 1>&2
-    git config "branch.${branch}.jira-task" "${task}"
+    git config "branch.${branch}.task-id" "${task}"
   )
 
   echo "${task_slug}/${project}"

@@ -183,11 +183,13 @@ git create-task TASK_ID PROJECT [PROJECT…]
 git create-task TASK_ID git@github.com:org/repo.git
 git create-task https://jira.example.com/browse/TASK_ID PROJECT
 git create-task 'https://jira.example.com/board?selectedIssue=TASK_ID' PROJECT
+git create-task https://linear.app/workspace/issue/TASK_ID/title-slug PROJECT
 ```
 Arguments:
-- `TASK_ID` — Jira issue key (e.g. `ABC-123`), or a Jira URL from which the key is extracted:
-  - If the URL has a `selectedIssue` query parameter, that value is used as the task key (takes precedence over a `/browse/` path segment).
-  - Otherwise if the URL path contains `/browse/TASK_ID`, that segment is used.
+- `TASK_ID` — Jira or Linear issue key (e.g. `ABC-123`), or a URL from which the key is extracted:
+  - A Linear issue URL (`https://linear.app/<workspace>/issue/TASK_ID/<title-slug>`) yields `TASK_ID`; any trailing path, query string, or fragment is trimmed.
+  - A Jira URL with a `selectedIssue` query parameter uses that value (takes precedence over a `/browse/` path segment).
+  - Otherwise a Jira URL whose path contains `/browse/TASK_ID` uses that segment.
 - `PROJECT…` — one or more project directory names, or `git@host:org/repo.git` SSH URLs from which the repo name is extracted. Each value is passed through to `git cwc` in full, and each project is cloned and branched independently.
 
 Behavior:

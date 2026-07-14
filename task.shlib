@@ -3,25 +3,62 @@
 # shellcheck source=external/sh-keyring/sh-keyring.shlib
 . "$(dirname "$(realpath "${BASH_SOURCE[0]}")")/external/sh-keyring/sh-keyring.shlib"
 
-# get_task ARG — extracts a Jira task key from ARG.
-# - If ARG is an https URL with a selectedIssue query parameter, returns its value.
-# - If ARG is an https URL with a /browse/ path segment, returns that segment.
-# - Otherwise returns ARG unchanged.
-get_task() {
+# get_task_id_from_linear_url ARG — extracts a Linear task key from a Linear
+# issue URL (https://linear.app/<workspace>/issue/<KEY>/<title-slug>), trimming
+# any trailing path, query string, or fragment. Returns 1 when ARG is not a
+# Linear issue URL.
+get_task_id_from_linear_url() {
   local arg="$1"
 
-  local task
-  if [[ "${arg}" == https://* && "${arg}" == *selectedIssue=* ]]; then
-    task="${arg##*selectedIssue=}"
-    task="${task%%&*}"
-  elif [[ "${arg}" == https://* && "${arg}" == */browse/* ]]; then
-    task="${arg##*/browse/}"
-  else
-    task="${arg}"
+  if [[ "${arg}" != https://linear.app/* || "${arg}" != */issue/* ]]; then
+    return 1
   fi
-  readonly task
 
-  echo "${task}"
+  local task_id="${arg##*/issue/}"
+  task_id="${task_id%%/*}"
+  task_id="${task_id%%\?*}"
+  task_id="${task_id%%#*}"
+
+  echo "${task_id}"
+}
+
+# get_task_id_from_jira_url ARG — extracts a Jira task key from a Jira URL.
+# - Board/backlog URLs: returns the selectedIssue query parameter's value.
+# - Browse URLs (https://<host>/browse/<KEY>): returns the trailing segment.
+# Returns 1 when ARG is not a Jira URL.
+get_task_id_from_jira_url() {
+  local arg="$1"
+
+  local task_id
+  if [[ "${arg}" == https://* && "${arg}" == *selectedIssue=* ]]; then
+    task_id="${arg##*selectedIssue=}"
+    task_id="${task_id%%&*}"
+  elif [[ "${arg}" == https://* && "${arg}" == */browse/* ]]; then
+    task_id="${arg##*/browse/}"
+  else
+    return 1
+  fi
+
+  echo "${task_id}"
+}
+
+# get_task_id_fallthrough ARG — returns ARG unchanged; the terminal handler
+# for arguments that are already bare task keys rather than URLs.
+get_task_id_fallthrough() {
+  echo "$1"
+}
+
+# get_task_id ARG — extracts a Jira or Linear task key from ARG, trying the
+# Linear URL form, then the Jira URL forms, and otherwise returning ARG
+# unchanged (see coalesce).
+get_task_id() {
+  local arg="$1"
+
+  coalesce \
+    get_task_id_from_linear_url \
+    get_task_id_from_jira_url \
+    get_task_id_fallthrough \
+    -- "${arg}"
 }
 
 # get_task_summary_from_jira TASK — fetches the Jira summary for TASK via acli.
@@ -31,14 +68,10 @@ get_task() {
 get_task_summary_from_jira() {
   local _task="$1"
 
-  if [[ ! -v ATLASSIAN_API_TOKEN ]]; then
-    return 1
-  fi
-
-  set_key ATLASSIAN_API_TOKEN
+  set_key ATLASSIAN_API_TOKEN || return
 
   acli jira workitem view "${_task}" --fields=summary --json |
-    jq -r '.fields.summary'
+    jq -r '.fields.summary // empty'
 }
 
 # get_task_summary_from_linear TASK — fetches the Linear issue title for TASK
@@ -65,7 +98,7 @@ get_task_summary_from_linear() {
     --header 'Content-Type: application/json' \
     --data "${payload}" \
     https://api.linear.app/graphql |
-    jq -r '.data.issue.title'
+    jq -r '.data.issue.title // empty'
 }
 
 # get_task_summary TASK — fetches TASK's summary, trying Linear first and

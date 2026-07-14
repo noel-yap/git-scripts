@@ -82,7 +82,15 @@ Describe 'git-create-task.sh'
 
   It 'processes each argument after the task as its own project'
     set_up_and_call() {
-      unset ATLASSIAN_API_TOKEN
+      export ATLASSIAN_API_TOKEN=test LINEAR_API_KEY=test
+      # set_key probes the Keychain first; report the item as absent (exit 44)
+      # so it falls back to the exported env value without real Keychain access.
+      printf '%s\n' '#!/bin/sh' 'exit 44' > security
+      chmod +x security
+      # This test asserts the bare ABC-123 slug, so both summary sources must
+      # yield nothing: stub curl (Linear) and acli (Jira) to emit no summary.
+      mock_first_with_rest curl 'exit 1'
+      mock_first_with_rest acli 'exit 1'
       # CWD-independent mock: creates the project dir named after the cwc argument.
       printf '%s\n' '#!/bin/sh' 'case "$1" in cwc) mkdir -p "$2" ;; esac' > git
       chmod +x git
