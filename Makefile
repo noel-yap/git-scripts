@@ -34,6 +34,8 @@ $(SUBMODULE_STAMP): .gitmodules
 test-shell: $(SUBMODULE_STAMP)
 	$(SHELLSPEC)
 
-# pytest suites under tests/.
+# pytest suites under tests/. These suites use no pytest plugins, so disable
+# plugin autoloading: it keeps a broken third-party plugin installed elsewhere
+# in the environment from aborting collection before any test runs.
 test-python: $(SUBMODULE_STAMP)
-	$(PYTEST) tests/
+	PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 $(PYTEST) tests/
