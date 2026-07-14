@@ -1,8 +1,18 @@
-unicodify_punctuation() {
-  local arg="$1"
+# shellcheck shell=bash
+
+# String utilities for normalizing punctuation in branch names and PR text.
+# ASCII punctuation is replaced with visually similar Unicode substitutes that
+# are safe in git ref names; deunicodify_punctuation reverses the mapping for
+# human-readable display.
+
+# punc_subs REF — populates the associative array named by REF with sed-regex
+# → Unicode substitute mappings used by unicodify_punctuation.
+punc_subs() {
+  local -n _ref="${1:?result array name required}"
 
   local -r fraction_slash='⁄'
   local -r horizontal_ellipsis='…'
+  local -r two_dot_leader='‥'
   local -r fullwidth_question_mark='？'
   local -r fullwidth_asterisk='＊'
   local -r en_space=' '
@@ -25,10 +35,12 @@ unicodify_punctuation() {
   local -r fullwidth_number_sign='＃'
   local -r fullwidth_colon='：'
 
-  local -A punc_subs
-  punc_subs=(
+  local -r ellipsis_re='\.\.\.\.*'
+
+  _ref=(
     ['\/']="${fraction_slash}"
-    ['\.\.*']="${horizontal_ellipsis}"
+    ["${ellipsis_re}"]="${horizontal_ellipsis}"
+    ['\.\.']="${two_dot_leader}"
     ['\?']="${fullwidth_question_mark}"
     ['\*']="${fullwidth_asterisk}"
     [' ']="${en_space}"
@@ -51,11 +63,69 @@ unicodify_punctuation() {
     ['#']="${fullwidth_number_sign}"
     [':']="${fullwidth_colon}"
   )
+}
+
+# _punc_sub_re_to_ascii RE — maps a punc_subs sed regex key back to its ASCII
+# literal. The ellipsis pattern is many-to-one, so it maps to "..." rather than
+# the unescaped regex.
+_punc_sub_re_to_ascii() {
+  local re="$1"
+  local -r ellipsis_re='\.\.\.\.*'
+
+  if [[ "${re}" == "${ellipsis_re}" ]]; then
+    printf '%s' '...'
+    return
+  fi
+
+  sed 's/\\\(.\)/\1/g' <<< "${re}"
+}
+
+# inverse_punc_subs REF — populates REF with the inverse of punc_subs: Unicode
+# substitute → ASCII literal, with ellipsis mapping to "...".
+inverse_punc_subs() {
+  local -n _ref="${1:?result array name required}"
+
+  local -A _forward
+  punc_subs _forward
+
+  local re ascii
+  for re in "${!_forward[@]}"; do
+    ascii="$(_punc_sub_re_to_ascii "${re}")"
+    _ref["${_forward[${re}]}"]="${ascii}"
+  done
+}
+
+# unicodify_punctuation ARG — replaces ASCII punctuation in ARG with fullwidth
+# or special Unicode equivalents (e.g. / → ⁄, space → en space, ... → …).
+unicodify_punctuation() {
+  local arg="$1"
+
+  local -r ellipsis_re='\.\.\.\.*'
+  local -A punc_subs
+  punc_subs punc_subs
   readonly punc_subs
 
   local re
-  for re in "${!punc_subs[@]}"; do
+  for re in "${ellipsis_re}" "${!punc_subs[@]}"; do
     arg="$(sed "s/${re}/${punc_subs[${re}]}/g" <<< "${arg}")"
+  done
+
+  echo "${arg}"
+}
+
+# deunicodify_punctuation ARG — the inverse of unicodify_punctuation: replaces
+# the fullwidth/en-space substitutes with their ASCII originals so a
+# unicodified branch slug reads naturally (e.g. in a PR title).
+deunicodify_punctuation() {
+  local arg="$1"
+
+  local -A inverse_punc_subs
+  inverse_punc_subs inverse_punc_subs
+  readonly inverse_punc_subs
+
+  local substitute
+  for substitute in "${!inverse_punc_subs[@]}"; do
+    arg="${arg//"${substitute}"/"${inverse_punc_subs[${substitute}]}"}"
   done
 
   echo "${arg}"

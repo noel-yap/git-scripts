@@ -2,9 +2,77 @@
 
 # shellcheck source=branch.shlib
 . "$(dirname "${BASH_SOURCE[0]}")/branch.shlib"
+# shellcheck source=string.shlib
+. "$(dirname "${BASH_SOURCE[0]}")/string.shlib"
+
+# pr_task_summary BRANCH — prints the human-readable summary embedded in a
+# task-slug branch name: the portion after the first fullwidth colon written by
+# get_task_slug, with unicodify_punctuation's fullwidth substitutes reversed
+# back to ASCII. Falls back to the whole (de-unicodified) branch name when
+# BRANCH carries no fullwidth colon.
+pr_task_summary() {
+  local -r _branch="$1"
+  local -r _fullwidth_colon='：'
+
+  local _summary
+  if [[ "${_branch}" == *"${_fullwidth_colon}"* ]]; then
+    _summary="${_branch#*"${_fullwidth_colon}"}"
+  else
+    _summary="${_branch}"
+  fi
+
+  deunicodify_punctuation "${_summary}"
+}
+
+# pr_commit_type BRANCH PARENT — prints the conventional-commit type that best
+# represents the commits on BRANCH but not PARENT, chosen by significance
+# (feat > fix > perf > refactor > docs > test > build > ci > style > chore >
+# revert). Returns 1 when no commit subject carries a conventional-commit type.
+pr_commit_type() {
+  local -r _branch="$1"
+  local -r _parent="$2"
+
+  local -ar _precedence=(
+    feat fix perf refactor docs test build ci style chore revert)
+
+  local -A _present=()
+  local _subject
+  while IFS= read -r _subject; do
+    if [[ "${_subject}" =~ ^([a-z]+)(\([^\)]*\))?!?: ]]; then
+      _present["${BASH_REMATCH[1]}"]=1
+    fi
+  done < <(git log --format='%s' "${_parent}..${_branch}")
+
+  local _candidate
+  for _candidate in "${_precedence[@]}"; do
+    if [[ -n "${_present[${_candidate}]:-}" ]]; then
+      echo "${_candidate}"
+      return 0
+    fi
+  done
+
+  return 1
+}
+
+# pr_title BRANCH PARENT — prints a conventional-commit PR title of the form
+# "<type>: <summary>", inferring <type> from BRANCH's commits relative to PARENT
+# and taking <summary> from BRANCH's task slug. Returns 1 when no
+# conventional-commit type can be inferred (leaving the caller to fall back to
+# git's autofilled title).
+pr_title() {
+  local -r _branch="$1"
+  local -r _parent="$2"
+
+  local _type
+  _type="$(pr_commit_type "${_branch}" "${_parent}")" || return 1
+
+  echo "${_type}: $(pr_task_summary "${_branch}")"
+}
 
 # edit_pr BRANCH — pushes BRANCH, creates a PR against its parent, and prints the PR URL.
 # Creates the PR idempotently (--fill; ignores error if PR already exists).
+# The title is overridden with a synthesized conventional-commit title
+# ("<type>: <summary>") when one can be inferred from BRANCH's commits.
 edit_pr() {
   local -r _branch="$1"
 
@@ -14,7 +82,15 @@ edit_pr() {
     git fetch upstream "${_parent}"
   fi
   git sow -f -u origin "${_branch}" >/dev/null
-  if ! gh pr create --fill --base="${_parent}" --head="${_branch}"; then
+
+  local -a _title_args=()
+  local _title
+  if _title="$(pr_title "${_branch}" "${_parent}")"; then
+    _title_args=(--title="${_title}")
+  fi
+
+  if ! gh pr create --fill "${_title_args[@]}" \
+      --base="${_parent}" --head="${_branch}"; then
     gh pr view --json url --jq .url "${_branch}"
   fi
 }

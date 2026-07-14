@@ -7,6 +7,128 @@ eval "$(shellspec - -c) exit 1"
 
 Describe 'git-edit-pr.shlib'
 
+  Describe 'pr_task_summary'
+
+    It 'returns the de-unicodified summary after the fullwidth colon'
+      When call pr_task_summary "ABC-123：$(unicodify_punctuation 'Add Linear lookup')"
+      The status should be success
+      The stdout should equal 'Add Linear lookup'
+    End
+
+    It 'restores fullwidth punctuation in the summary'
+      When call pr_task_summary "ABC-123：$(unicodify_punctuation 'handle (bar) & baz')"
+      The status should be success
+      The stdout should equal 'handle (bar) & baz'
+    End
+
+    It 'splits on the first fullwidth colon'
+      When call pr_task_summary "ABC-123：$(unicodify_punctuation 'a: b')"
+      The status should be success
+      The stdout should equal 'a: b'
+    End
+
+    It 'returns the branch name when there is no fullwidth colon'
+      When call pr_task_summary 'feature'
+      The status should be success
+      The stdout should equal 'feature'
+    End
+
+  End
+
+  Describe 'pr_commit_type'
+
+    It 'returns the type when a single conventional commit is present'
+      set_up_and_call() {
+        {
+          init_repo
+          git switch -c feature
+          git commit --allow-empty -m 'feat(task): add lookup'
+        } >/dev/null 2>&1
+        pr_commit_type feature main
+      }
+      When call in_tempdir set_up_and_call
+      The status should be success
+      The stdout should equal 'feat'
+    End
+
+    It 'prefers the more significant type across commits'
+      set_up_and_call() {
+        {
+          init_repo
+          git switch -c feature
+          git commit --allow-empty -m 'refactor(task): tidy'
+          git commit --allow-empty -m 'feat(task): add lookup'
+        } >/dev/null 2>&1
+        pr_commit_type feature main
+      }
+      When call in_tempdir set_up_and_call
+      The status should be success
+      The stdout should equal 'feat'
+    End
+
+    It 'recognizes a breaking-change bang'
+      set_up_and_call() {
+        {
+          init_repo
+          git switch -c feature
+          git commit --allow-empty -m 'feat(task)!: drop legacy flag'
+        } >/dev/null 2>&1
+        pr_commit_type feature main
+      }
+      When call in_tempdir set_up_and_call
+      The status should be success
+      The stdout should equal 'feat'
+    End
+
+    It 'returns non-zero when no commit is conventional'
+      set_up_and_call() {
+        {
+          init_repo
+          git switch -c feature
+          git commit --allow-empty -m 'wip stuff'
+        } >/dev/null 2>&1
+        pr_commit_type feature main
+      }
+      When call in_tempdir set_up_and_call
+      The status should be failure
+      The stdout should be blank
+    End
+
+  End
+
+  Describe 'pr_title'
+
+    It 'combines the inferred type and de-unicodified summary'
+      set_up_and_call() {
+        _slug="ABC-123：$(unicodify_punctuation 'Add Linear lookup')"
+        {
+          init_repo
+          git switch -c "${_slug}"
+          git commit --allow-empty -m 'feat(task): add lookup'
+        } >/dev/null 2>&1
+        pr_title "${_slug}" main
+      }
+      When call in_tempdir set_up_and_call
+      The status should be success
+      The stdout should equal 'feat: Add Linear lookup'
+    End
+
+    It 'returns non-zero when no conventional-commit type is present'
+      set_up_and_call() {
+        {
+          init_repo
+          git switch -c feature
+          git commit --allow-empty -m 'wip stuff'
+        } >/dev/null 2>&1
+        pr_title feature main
+      }
+      When call in_tempdir set_up_and_call
+      The status should be failure
+      The stdout should be blank
+    End
+
+  End
+
   Describe 'edit_pr'
 
     It 'outputs URL from gh pr create when PR is created successfully'
@@ -75,6 +197,54 @@ Describe 'git-edit-pr.shlib'
       When call in_tempdir set_up_and_call
       The status should be success
       The stdout should not be blank
+    End
+
+    It 'passes a synthesized conventional-commit title to gh pr create'
+      set_up_and_call() {
+        {
+          init_repo
+          init_remote
+          PATH="${PROJECT_ROOT_DIR}:${PATH}" \
+            GIT_CONFIG_GLOBAL="${PROJECT_ROOT_DIR}/.gitconfig" \
+            git bud feature
+          git commit --allow-empty -m 'feat(task): add lookup'
+        } >/dev/null 2>&1
+
+        mock_first_with_rest gh \
+          'echo "$@"'
+
+        PATH="${PWD}:${PROJECT_ROOT_DIR}:${PATH}" \
+          GIT_CONFIG_GLOBAL="${PROJECT_ROOT_DIR}/.gitconfig" \
+          edit_pr feature 2>/dev/null
+      }
+
+      When call in_tempdir set_up_and_call
+      The status should be success
+      The stdout should include '--title=feat: feature'
+    End
+
+    It 'omits --title when no conventional-commit type is inferred'
+      set_up_and_call() {
+        {
+          init_repo
+          init_remote
+          PATH="${PROJECT_ROOT_DIR}:${PATH}" \
+            GIT_CONFIG_GLOBAL="${PROJECT_ROOT_DIR}/.gitconfig" \
+            git bud feature
+          git commit --allow-empty -m 'wip stuff'
+        } >/dev/null 2>&1
+
+        mock_first_with_rest gh \
+          'echo "$@"'
+
+        PATH="${PWD}:${PROJECT_ROOT_DIR}:${PATH}" \
+          GIT_CONFIG_GLOBAL="${PROJECT_ROOT_DIR}/.gitconfig" \
+          edit_pr feature 2>/dev/null
+      }
+
+      When call in_tempdir set_up_and_call
+      The status should be success
+      The stdout should not include '--title'
     End
 
     It 'outputs URL from gh pr view when PR already exists'
