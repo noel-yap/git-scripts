@@ -1,0 +1,11 @@
+# shellcheck shell=bash
+
+# get_remote — prints the name of the remote to publish branches to:
+# "upstream" when that remote is configured, otherwise "origin".
+get_remote() {
+  if git remote get-url upstream &>/dev/null; then
+    echo upstream
+  else
+    echo origin
+  fi
+}

@@ -199,6 +199,71 @@ Describe 'git-edit-pr.shlib'
       The stdout should not be blank
     End
 
+    It 'rebases the branch onto the fetched upstream parent before pushing'
+      set_up_and_call() {
+        {
+          init_repo
+          init_remote
+          git init --bare upstream.git
+          git remote add upstream upstream.git
+          git push upstream main
+          PATH="${PROJECT_ROOT_DIR}:${PATH}" \
+            GIT_CONFIG_GLOBAL="${PROJECT_ROOT_DIR}/.gitconfig" \
+            git bud feature
+          git commit --allow-empty -m 'feat: feature work'
+          git switch main
+          git commit --allow-empty -m 'upstream change'
+          git push upstream main
+          git switch feature
+        } >/dev/null 2>&1
+
+        mock_first_with_rest gh \
+          'echo https://feature-url'
+
+        PATH="${PWD}:${PROJECT_ROOT_DIR}:${PATH}" \
+          GIT_CONFIG_GLOBAL="${PROJECT_ROOT_DIR}/.gitconfig" \
+          edit_pr feature 2>/dev/null
+
+        git log --format='%s' feature
+      }
+
+      When call in_tempdir set_up_and_call
+      The status should be success
+      The stdout should include 'upstream change'
+      The stdout should include 'feat: feature work'
+    End
+
+    It 'rebases the branch onto the fetched origin parent when there is no upstream'
+      set_up_and_call() {
+        {
+          init_repo
+          init_remote
+          PATH="${PROJECT_ROOT_DIR}:${PATH}" \
+            GIT_CONFIG_GLOBAL="${PROJECT_ROOT_DIR}/.gitconfig" \
+            git bud feature
+          git commit --allow-empty -m 'feat: feature work'
+          git switch main
+          git commit --allow-empty -m 'origin change'
+          git push origin main
+          git switch feature
+        } >/dev/null 2>&1
+
+        mock_first_with_rest gh \
+          'echo https://feature-url'
+
+        PATH="${PWD}:${PROJECT_ROOT_DIR}:${PATH}" \
+          GIT_CONFIG_GLOBAL="${PROJECT_ROOT_DIR}/.gitconfig" \
+          edit_pr feature 2>/dev/null
+
+        git log --format='%s' feature
+      }
+
+      When call in_tempdir set_up_and_call
+      The status should be success
+      The stdout should include 'origin change'
+      The stdout should include 'feat: feature work'
+    End
+
     It 'passes a synthesized conventional-commit title to gh pr create'
       set_up_and_call() {
         {
