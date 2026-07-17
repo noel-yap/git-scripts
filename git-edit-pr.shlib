@@ -75,18 +75,18 @@ pr_title() {
 # Creates the PR idempotently (--fill; ignores error if PR already exists).
 # The title is overridden with a synthesized conventional-commit title
 # ("<type>: <summary>") when one can be inferred from BRANCH's commits.
-# Fetches the parent branch from the resolved remote (upstream when it exists,
-# otherwise origin) and rebases BRANCH onto it before pushing, so the PR diff is
-# against the latest base.
+# If the current branch has a remote tracking ref, pulls before force-pushing
+# (fails on conflict); skips the pull silently when no upstream is configured.
 edit_pr() {
   local -r _branch="$1"
 
   local -r _parent="$(get_parent_branch "${_branch}")"
 
   local -r _remote="$(get_remote)"
-  git fetch "${_remote}" "${_parent}" >/dev/null
-  git rebase FETCH_HEAD "${_branch}" >/dev/null
-  git sow -f -u "${_remote}" "${_branch}" >/dev/null
+  if git rev-parse --verify '@{upstream}' >/dev/null 2>&1; then
+    git pull >/dev/null || return
+  fi
+  git push -f -u "${_remote}" "${_branch}" >/dev/null
 
   local -a _title_args=()
   local _title

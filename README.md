@@ -212,8 +212,8 @@ Requirements:
 - `CHROME_PROFILE` environment variable set to your Chrome profile directory name (defaults to `Default` if not set).
 
 Behavior:
-- For each branch in the stack, fetches the parent branch from the remote (`upstream` when it exists, otherwise `origin`) and rebases the branch onto it before pushing, so each PR's diff is against the latest base.
-- Creates (or updates) PRs for every ancestor branch between trunk and the current branch, then for every descendant branch, using `git sow` to push each branch.
+- For each branch in the stack, pulls the latest changes if the current branch has a remote tracking ref (fails on conflict; skips silently if no upstream is configured) before force-pushing the branch to the remote (`upstream` when it exists, otherwise `origin`).
+- Creates (or updates) PRs for every ancestor branch between trunk and the current branch, then for every descendant branch, force-pushing each branch.
 - Sets each PR's title to a Conventional Commits form, `<type>: <summary>`, where `<type>` is inferred from the branch's commits (the most significant of feat > fix > perf > refactor > docs > test > build > ci > style > chore > revert) and `<summary>` is taken from the branch's task slug. Falls back to git's autofilled title when no conventional-commit type can be inferred.
 - Opens all PR URLs in a single Chrome window in order: ancestors first, current branch, then descendants.
 
