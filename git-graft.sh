@@ -59,6 +59,7 @@ else
     readonly target_branch
     git switch "${branch}"
     git rebase --onto "${target_branch}" "${union}"
+    git config "branch.${branch}.union" "$(git merge-base HEAD "${target_branch}")"
 
     GIT_GRAFT_DEPTH=$(( ${GIT_GRAFT_DEPTH:-0} + 1 )) git graft
   fi

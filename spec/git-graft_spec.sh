@@ -323,6 +323,49 @@ Describe 'git-graft.sh'
     The stdout should not include 'feature-2.1.1 commit'
   End
 
+  It 'updates union so a second graft does not conflict on already-applied commits'
+    set_up_and_call() {
+      {
+        init_repo
+
+        PATH="${PROJECT_ROOT_DIR}:${PATH}" \
+          GIT_CONFIG_GLOBAL="${PROJECT_ROOT_DIR}/.gitconfig" \
+          git bud feature
+        echo feature-change > feature-file
+        git add feature-file
+        git commit -m 'feature commit'
+
+        git switch main
+        echo 'content v1' > shared-file
+        git add shared-file
+        git commit -m 'main commit 1'
+
+        PATH="${PROJECT_ROOT_DIR}:${PATH}" \
+          GIT_CONFIG_GLOBAL="${PROJECT_ROOT_DIR}/.gitconfig" \
+          "${PROJECT_ROOT_DIR}/git-graft.sh" feature
+
+        # Advance main by modifying the same file — a stale union would make
+        # the second graft replay main-commit-1 on top of this, causing a conflict.
+        echo 'content v2' > shared-file
+        git add shared-file
+        git commit -m 'main commit 2'
+
+        PATH="${PROJECT_ROOT_DIR}:${PATH}" \
+          GIT_CONFIG_GLOBAL="${PROJECT_ROOT_DIR}/.gitconfig" \
+          "${PROJECT_ROOT_DIR}/git-graft.sh" feature
+      } >/dev/null 2>&1
+
+      git log --oneline feature
+    }
+
+    When call in_tempdir set_up_and_call
+    The status should be success
+    The stdout should include 'feature commit'
+    The stdout should include 'main commit 1'
+    The stdout should include 'main commit 2'
+    The stdout should include 'initial'
+  End
+
   It 'grafts all child branches when a parent has two children'
     set_up_and_call() {
       {
