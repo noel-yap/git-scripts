@@ -325,6 +325,121 @@ class TestGetTaskSummaryFromLinear:
         assert result.stdout == ""
 
 
+class TestGetTaskProjectsFromLinear:
+    """get_task_projects_from_linear posts a GraphQL query and reads the
+    "Repositories" label names from the response, emitting one per line with
+    any "org/" prefix stripped to match get_project's bare-repo-name
+    convention.
+    """
+
+    def test_returns_filtered_label_names_when_repositories_labels_exist(self) -> None:
+        # LINEAR_API_KEY is exported, so set_key resolves it from the
+        # environment; stub `security` (return 44 == item absent) so set_key's
+        # Keychain expiry step touches no real Keychain.
+        result = _run(
+            f'source "{SHLIB}"; '
+            "export LINEAR_API_KEY=test; "
+            "security() { return 44; }; "
+            "curl() { "
+            "cat <<'CURL_EOF'\n"
+            '{"data":{"issue":{"labels":{"nodes":['
+            '{"name":"backend","parent":{"name":"Repositories"}},'
+            '{"name":"frontend","parent":{"name":"Repositories"}}'
+            ']}}}}\n'
+            "CURL_EOF\n"
+            "}; "
+            "get_task_projects_from_linear ENG-123"
+        )
+        assert result.returncode == 0
+        assert result.stdout == "backend\nfrontend\n"
+
+    def test_excludes_labels_with_non_repositories_parent(self) -> None:
+        result = _run(
+            f'source "{SHLIB}"; '
+            "export LINEAR_API_KEY=test; "
+            "security() { return 44; }; "
+            "curl() { "
+            "cat <<'CURL_EOF'\n"
+            '{"data":{"issue":{"labels":{"nodes":['
+            '{"name":"backend","parent":{"name":"Repositories"}},'
+            '{"name":"bug","parent":{"name":"Category"}}'
+            ']}}}}\n'
+            "CURL_EOF\n"
+            "}; "
+            "get_task_projects_from_linear ENG-123"
+        )
+        assert result.returncode == 0
+        assert result.stdout == "backend\n"
+
+    def test_strips_org_prefix_from_repositories_label_name(self) -> None:
+        # Real Linear "Repositories" labels are "org/repo" strings; strip the
+        # org so the result matches get_project's bare-repo-name convention.
+        result = _run(
+            f'source "{SHLIB}"; '
+            "export LINEAR_API_KEY=test; "
+            "security() { return 44; }; "
+            "curl() { "
+            "cat <<'CURL_EOF'\n"
+            '{"data":{"issue":{"labels":{"nodes":['
+            '{"name":"rzsoftware/swe-plugin","parent":{"name":"Repositories"}}'
+            ']}}}}\n'
+            "CURL_EOF\n"
+            "}; "
+            "get_task_projects_from_linear ENG-123"
+        )
+        assert result.returncode == 0
+        assert result.stdout == "swe-plugin\n"
+
+    def test_leaves_org_free_repositories_label_name_unchanged(self) -> None:
+        # A "Repositories" label with no "org/" prefix passes through as-is.
+        result = _run(
+            f'source "{SHLIB}"; '
+            "export LINEAR_API_KEY=test; "
+            "security() { return 44; }; "
+            "curl() { "
+            "cat <<'CURL_EOF'\n"
+            '{"data":{"issue":{"labels":{"nodes":['
+            '{"name":"swe-plugin","parent":{"name":"Repositories"}}'
+            ']}}}}\n'
+            "CURL_EOF\n"
+            "}; "
+            "get_task_projects_from_linear ENG-123"
+        )
+        assert result.returncode == 0
+        assert result.stdout == "swe-plugin\n"
+
+    def test_emits_nothing_when_issue_is_not_found(self) -> None:
+        # A nonexistent issue yields a null `data.issue`; jq's `// []` must
+        # emit nothing rather than error.
+        result = _run(
+            f'source "{SHLIB}"; '
+            "export LINEAR_API_KEY=test; "
+            "security() { return 44; }; "
+            "curl() { "
+            "cat <<'CURL_EOF'\n"
+            '{"data":{"issue":null}}\n'
+            "CURL_EOF\n"
+            "}; "
+            "get_task_projects_from_linear ENG-123"
+        )
+        assert result.stdout == ""
+
+    def test_emits_nothing_when_no_labels_exist(self) -> None:
+        # An issue with no labels yields an empty labels array.
+        result = _run(
+            f'source "{SHLIB}"; '
+            "export LINEAR_API_KEY=test; "
+            "security() { return 44; }; "
+            "curl() { "
+            "cat <<'CURL_EOF'\n"
+            '{"data":{"issue":{"labels":{"nodes":[]}}}}\n'
+            "CURL_EOF\n"
+            "}; "
+            "get_task_projects_from_linear ENG-123"
+        )
+        assert result.stdout == ""
+
+
 class TestGetTaskSummary:
     """get_task_summary tries Linear first and falls back to Jira, returning the
     first source that yields a non-empty summary.

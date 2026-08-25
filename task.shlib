@@ -101,6 +101,38 @@ get_task_summary_from_linear() {
     jq -r '.data.issue.title // empty'
 }
 
+# get_task_projects_from_linear TASK — fetches the "Repositories" label
+# group from a Linear issue via the GraphQL API. Resolves LINEAR_API_KEY via
+# set_key (env, Keychain, 1Password, or AWS Secrets Manager). TASK is the
+# human-readable identifier (e.g. ENG-123). Emits one label name per line,
+# filtered to labels whose parent is named "Repositories", with any "org/"
+# prefix stripped so the result matches get_project's bare-repo-name
+# convention (this assumes the label's org is your configured default org --
+# see GIT_ORG in git-clone-with-cache.shlib). Emits nothing when the issue is
+# not found or has no such labels.
+get_task_projects_from_linear() {
+  local _task="$1"
+
+  set_key LINEAR_API_KEY
+
+  # $id/$query are GraphQL and jq variables, intentionally not shell-expanded.
+  # shellcheck disable=SC2016
+  local query='query($id: String!) { issue(id: $id) { labels { nodes { name parent { name } } } } }'
+  local payload
+  payload="$(jq --null-input \
+    --arg query "${query}" \
+    --arg id "${_task}" \
+    '{query: $query, variables: {id: $id}}')"
+
+  curl --silent --fail \
+    --request POST \
+    --header "Authorization: ${LINEAR_API_KEY}" \
+    --header 'Content-Type: application/json' \
+    --data "${payload}" \
+    https://api.linear.app/graphql |
+    jq -r '.data.issue.labels.nodes // [] | .[] | select(.parent.name == "Repositories") | .name | sub("^[^/]*/"; "")'
+}
+
 # get_task_summary TASK — fetches TASK's summary, trying Linear first and
 # falling back to Jira. Returns the first source that yields a non-empty
 # summary (see coalesce).

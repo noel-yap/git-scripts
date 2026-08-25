@@ -190,4 +190,62 @@ Describe 'git-create-task.sh'
     The stderr should not be blank
   End
 
+  It 'derives the project from the Linear "Repositories" label when no PROJECT_DIR_NAME is given'
+    set_up_and_call() {
+      export ATLASSIAN_API_TOKEN=test LINEAR_API_KEY=test
+      # set_key probes the Keychain first; report the item as absent (exit 44)
+      # so it falls back to the exported env value without real Keychain access.
+      printf '%s\n' '#!/bin/sh' 'exit 44' > security
+      chmod +x security
+      # get_task_slug's summary lookup and git-create-task.sh's project-label
+      # fallback each build a GraphQL payload with jq, POST it with curl, then
+      # parse the response with jq -- in that order, twice over: summary
+      # payload+parse, then label payload+parse.
+      mock_first_with_rest curl 'echo "{}"' 'echo "{}"'
+      mock_first_with_rest jq \
+        'echo "{}"' \
+        'cat > /dev/null; echo "Do stuff"' \
+        'echo "{}"' \
+        'cat > /dev/null; echo "my-repo"'
+      mock_first_with_rest git \
+        'mkdir -p my-repo' \
+        'true' \
+        'true' \
+        'true'
+
+      PATH="${PWD}:${PROJECT_ROOT_DIR}:${PATH}" \
+        "${PROJECT_ROOT_DIR}/git-create-task.sh" ABC-123
+    }
+
+    When call in_tempdir set_up_and_call
+    The status should be success
+    The stdout should end with '/my-repo'
+    The stderr should not be blank
+  End
+
+  It 'fails when no PROJECT_DIR_NAME is given and the Linear issue has no "Repositories" label'
+    set_up_and_call() {
+      export ATLASSIAN_API_TOKEN=test LINEAR_API_KEY=test
+      # set_key probes the Keychain first; report the item as absent (exit 44)
+      # so it falls back to the exported env value without real Keychain access.
+      printf '%s\n' '#!/bin/sh' 'exit 44' > security
+      chmod +x security
+      # Same call shape as above, but the label-parse jq call emits nothing --
+      # an issue with no "Repositories" label.
+      mock_first_with_rest curl 'echo "{}"' 'echo "{}"'
+      mock_first_with_rest jq \
+        'echo "{}"' \
+        'cat > /dev/null; echo "Do stuff"' \
+        'echo "{}"' \
+        'cat > /dev/null; true'
+
+      PATH="${PWD}:${PROJECT_ROOT_DIR}:${PATH}" \
+        "${PROJECT_ROOT_DIR}/git-create-task.sh" ABC-123
+    }
+
+    When call in_tempdir set_up_and_call
+    The status should be failure
+    The stderr should include "No PROJECT_DIR_NAME given"
+  End
+
 End

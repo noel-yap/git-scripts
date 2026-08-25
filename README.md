@@ -184,16 +184,18 @@ git create-task TASK_ID git@github.com:org/repo.git
 git create-task https://jira.example.com/browse/TASK_ID PROJECT
 git create-task 'https://jira.example.com/board?selectedIssue=TASK_ID' PROJECT
 git create-task https://linear.app/workspace/issue/TASK_ID/title-slug PROJECT
+git create-task https://linear.app/workspace/issue/TASK_ID/title-slug
 ```
 Arguments:
 - `TASK_ID` — Jira or Linear issue key (e.g. `ABC-123`), or a URL from which the key is extracted:
   - A Linear issue URL (`https://linear.app/<workspace>/issue/TASK_ID/<title-slug>`) yields `TASK_ID`; any trailing path, query string, or fragment is trimmed.
   - A Jira URL with a `selectedIssue` query parameter uses that value (takes precedence over a `/browse/` path segment).
   - Otherwise a Jira URL whose path contains `/browse/TASK_ID` uses that segment.
-- `PROJECT…` — one or more project directory names, or `git@host:org/repo.git` SSH URLs from which the repo name is extracted. Each value is passed through to `git cwc` in full, and each project is cloned and branched independently.
+- `PROJECT…` — (optional) one or more project directory names, or `git@host:org/repo.git` SSH URLs from which the repo name is extracted. Each value is passed through to `git cwc` in full, and each project is cloned and branched independently. When omitted, projects are instead derived from the Linear issue's `"Repositories"` label group (see Behavior); if none are given and no such label is found, the command exits with an error.
 
 Behavior:
 - If `ATLASSIAN_API_TOKEN` is set, looks up the task summary (from Linear via its GraphQL API, falling back to Jira via `acli`) and composes a branch/directory name of the form `TASK_ID：SUMMARY`. Otherwise uses just `TASK_ID`. The required API credential (`LINEAR_API_KEY` or `ATLASSIAN_API_TOKEN`) is resolved from the environment, macOS Keychain, 1Password, or AWS Secrets Manager.
+- When no `PROJECT` is given, fetches the Linear issue's `"Repositories"` label group and uses each label's value (with any `org/` prefix stripped to a bare repo name) as a project. This assumes the label's org matches your configured default org (`GIT_ORG`, used by `git cwc`) — a repo actually hosted under a different org will silently resolve to the wrong remote.
 - Creates a subdirectory named after the branch and `cd`s into it.
 - For each `PROJECT`, runs `git cwc PROJECT` to set up the repo (requires your local `git cwc` helper), then inside the project creates branch `TASK_ID：SUMMARY` (or `TASK_ID` if no token) and sets upstream.
 - Prints one `TASK_SLUG/PROJECT` workspace path per project to stdout; git and diagnostic output goes to stderr. The `ct` alias opens each printed path in `ide`.
