@@ -1,0 +1,58 @@
+# shellcheck shell=bash
+
+# get_shared_claude_memory_dir CACHE_DIR — prints the shared Claude Code
+# memory directory for the logical project whose git-clone-with-cache.sh
+# cache directory is CACHE_DIR (i.e. `${cache_root}/${project}` in
+# git-clone-with-cache.sh), creating it (and a stub MEMORY.md index inside
+# it) if it doesn't exist yet.
+get_shared_claude_memory_dir() {
+  local cache_dir="$1"
+  local shared_memory_dir="${cache_dir}.claude-memory"
+
+  mkdir -p "${shared_memory_dir}"
+
+  if [[ ! -e "${shared_memory_dir}/MEMORY.md" ]]; then
+    printf '%s\n' '# Memory index' '' > "${shared_memory_dir}/MEMORY.md"
+  fi
+
+  printf '%s\n' "${shared_memory_dir}"
+}
+
+# write_auto_memory_setting PROJECT_DIR SHARED_MEMORY_DIR — merges
+# { "autoMemoryDirectory": SHARED_MEMORY_DIR } into
+# PROJECT_DIR/.claude/settings.local.json, creating the file (and its
+# parent .claude/ directory) if it doesn't exist yet, and preserving any
+# other keys already present in that file.
+write_auto_memory_setting() {
+  local project_dir="$1"
+  local shared_memory_dir="$2"
+  local settings_file="${project_dir}/.claude/settings.local.json"
+  local merged
+
+  mkdir -p "${project_dir}/.claude"
+
+  if [[ -e "${settings_file}" ]]; then
+    merged="$(jq --arg dir "${shared_memory_dir}" \
+      '.autoMemoryDirectory = $dir' "${settings_file}")"
+  else
+    merged="$(jq -n --arg dir "${shared_memory_dir}" \
+      '{autoMemoryDirectory: $dir}')"
+  fi
+
+  printf '%s' "${merged}" > "${settings_file}"
+}
+
+# ignore_claude_local_settings PROJECT_DIR — appends
+# .claude/settings.local.json to PROJECT_DIR/.git/info/exclude, unless
+# it's already ignored there or via a tracked .gitignore.
+ignore_claude_local_settings() {
+  local project_dir="$1"
+  local exclude_file="${project_dir}/.git/info/exclude"
+
+  if git -C "${project_dir}" check-ignore -q .claude/settings.local.json; then
+    return 0
+  fi
+
+  mkdir -p "$(dirname "${exclude_file}")"
+  printf '%s\n' '.claude/settings.local.json' >> "${exclude_file}"
+}
