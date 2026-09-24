@@ -34,6 +34,7 @@ punc_subs() {
   local -r fullwidth_quotation_mark='＂'
   local -r fullwidth_number_sign='＃'
   local -r fullwidth_colon='：'
+  local -r modifier_letter_grave_accent='ˋ'
 
   local -r ellipsis_re='\.\.\.\.*'
 
@@ -62,6 +63,7 @@ punc_subs() {
     ['"']="${fullwidth_quotation_mark}"
     ['#']="${fullwidth_number_sign}"
     [':']="${fullwidth_colon}"
+    ['`']="${modifier_letter_grave_accent}"
   )
 }
 
