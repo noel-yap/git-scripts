@@ -13,6 +13,9 @@ shopt -s inherit_errexit
 # shellcheck source=git-clone-with-cache.shlib
 . "$(dirname "$(realpath "${BASH_SOURCE[0]}")")/git-clone-with-cache.shlib"
 
+# shellcheck source=share-claude-memory.shlib
+. "$(dirname "$(realpath "${BASH_SOURCE[0]}")")/share-claude-memory.shlib"
+
 eval "$(get_repo_coordinates "$1")"
 readonly git_domain
 readonly git_org
@@ -37,4 +40,7 @@ git clone-or-pull "${remote_fetch_url}"
   git remote set-url --push origin "${remote_push_url}"
   git remote add upstream "${remote_push_url}"
   git fetch upstream "$(get_trunk)"
+  shared_memory_dir="$(get_shared_claude_memory_dir "${cache_root}/${project}")"
+  write_auto_memory_setting "${PWD}" "${shared_memory_dir}"
+  ignore_claude_local_settings "${PWD}"
 )
