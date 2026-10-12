@@ -34,6 +34,46 @@ Describe 'git-create-task.sh'
     The stderr should not be blank
   End
 
+  It 'creates a tmp directory and an .envrc exporting TMPDIR in the task directory'
+    set_up_and_call() {
+      unset ATLASSIAN_API_TOKEN
+      mock_first_with_rest git \
+        'mkdir -p my-repo' \
+        'true' \
+        'true' \
+        'true'
+
+      PATH="${PWD}:${PROJECT_ROOT_DIR}:${PATH}" \
+        "${PROJECT_ROOT_DIR}/git-create-task.sh" ABC-123 my-repo >/dev/null 2>&1
+      test -d ABC-123/tmp && cat ABC-123/.envrc
+    }
+
+    When call in_tempdir set_up_and_call
+    The status should be success
+    The stdout should equal 'export TMPDIR="${PWD}/tmp"'
+  End
+
+  It 'does not overwrite an existing .envrc'
+    set_up_and_call() {
+      unset ATLASSIAN_API_TOKEN
+      mock_first_with_rest git \
+        'mkdir -p my-repo' \
+        'true' \
+        'true' \
+        'true'
+      mkdir ABC-123
+      echo 'existing' > ABC-123/.envrc
+
+      PATH="${PWD}:${PROJECT_ROOT_DIR}:${PATH}" \
+        "${PROJECT_ROOT_DIR}/git-create-task.sh" ABC-123 my-repo >/dev/null 2>&1
+      cat ABC-123/.envrc
+    }
+
+    When call in_tempdir set_up_and_call
+    The status should be success
+    The stdout should equal 'existing'
+  End
+
   It 'outputs task_slug/project to stdout'
     set_up_and_call() {
       unset ATLASSIAN_API_TOKEN

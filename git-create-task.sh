@@ -35,6 +35,8 @@ shopt -s inherit_errexit
 #   to derive the list of projects, stripping each label's "org/" prefix. Exits with error
 #   if no projects are found.
 # - Creates and enters a directory named after the branch.
+# - Sets up the workspace environment in the task directory (a `tmp` directory
+#   and a direnv `.envrc`, unless one exists, that points TMPDIR at it).
 # - For each PROJECT, runs `git cwc <project>` to clone/checkout a working copy under
 #   that directory, then creates and switches to the new branch in the project repo and
 #   pushes it to origin with upstream tracking.
@@ -70,6 +72,8 @@ shopt -s inherit_errexit
 . "$(dirname "$(realpath "${BASH_SOURCE[0]}")")/task.shlib"
 # shellcheck source=project.shlib
 . "$(dirname "$(realpath "${BASH_SOURCE[0]}")")/project.shlib"
+# shellcheck source=workspace.shlib
+. "$(dirname "$(realpath "${BASH_SOURCE[0]}")")/workspace.shlib"
 
 task="$(get_task_id "$1")"
 readonly task
@@ -109,6 +113,8 @@ trap _cleanup EXIT
 chmod u+w .
 mkdir -p "${dir}"
 cd "${dir}" >/dev/null
+
+setup_workspace_env
 
 for project_arg in "${project_args[@]}"; do
   project="$(get_project "${project_arg}")"

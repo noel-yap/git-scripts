@@ -1,0 +1,17 @@
+# shellcheck shell=bash
+
+# Workspace environment setup for task directories.
+
+# setup_workspace_env — in the current (task) directory, creates a `tmp`
+# directory and, unless one already exists, a direnv `.envrc` that points
+# TMPDIR at it. direnv evaluates .envrc in its own directory, so the path is
+# ${PWD}-relative. An existing .envrc is never overwritten.
+setup_workspace_env() {
+  mkdir -p tmp
+
+  if [[ ! -e .envrc ]]; then
+    # ${PWD} must expand when direnv evaluates .envrc, not when it is written.
+    # shellcheck disable=SC2016
+    echo 'export TMPDIR="${PWD}/tmp"' > .envrc
+  fi
+}
