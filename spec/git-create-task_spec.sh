@@ -60,10 +60,13 @@ Describe 'git-create-task.sh'
       # so it falls back to the exported env value without real Keychain access.
       printf '%s\n' '#!/bin/sh' 'exit 44' > security
       chmod +x security
-      # get_task_summary tries Linear first: stub curl's GraphQL response and
-      # jq (called once to build the payload, then to read the issue title).
+      # get_task_slug makes one Linear call for branchName and title: jq builds
+      # the payload, curl returns the GraphQL response, then jq parses it into
+      # two lines (an empty branchName, then the title).
       mock_first_with_rest curl 'echo "{}"'
-      mock_first_with_rest jq 'echo "{}"' 'cat > /dev/null; echo "Do stuff"'
+      mock_first_with_rest jq \
+        'echo "{}"' \
+        'cat > /dev/null; printf "\nDo stuff\n"'
       mock_first_with_rest git \
         'mkdir -p my-repo; echo "git $*"' \
         'true' \
@@ -87,8 +90,8 @@ Describe 'git-create-task.sh'
       # so it falls back to the exported env value without real Keychain access.
       printf '%s\n' '#!/bin/sh' 'exit 44' > security
       chmod +x security
-      # This test asserts the bare ABC-123 slug, so both summary sources must
-      # yield nothing: stub curl (Linear) and acli (Jira) to emit no summary.
+      # This test asserts the bare ABC-123 slug, so every lookup must yield
+      # nothing: stub curl (Linear) and acli (Jira) to fail.
       mock_first_with_rest curl 'exit 1'
       mock_first_with_rest acli 'exit 1'
       # CWD-independent mock: creates the project dir named after the cwc argument.
@@ -112,10 +115,13 @@ Describe 'git-create-task.sh'
       # so it falls back to the exported env value without real Keychain access.
       printf '%s\n' '#!/bin/sh' 'exit 44' > security
       chmod +x security
-      # get_task_summary tries Linear first: stub curl's GraphQL response and
-      # jq (called once to build the payload, then to read the issue title).
+      # get_task_slug makes one Linear call for branchName and title: jq builds
+      # the payload, curl returns the GraphQL response, then jq parses it into
+      # two lines (an empty branchName, then the title).
       mock_first_with_rest curl 'echo "{}"'
-      mock_first_with_rest jq 'echo "{}"' 'cat > /dev/null; echo "Do stuff"'
+      mock_first_with_rest jq \
+        'echo "{}"' \
+        'cat > /dev/null; printf "\nDo stuff\n"'
       mock_first_with_rest git \
         'mkdir -p my-repo' \
         'true' \
@@ -140,10 +146,13 @@ Describe 'git-create-task.sh'
       # so it falls back to the exported env value without real Keychain access.
       printf '%s\n' '#!/bin/sh' 'exit 44' > security
       chmod +x security
-      # get_task_summary tries Linear first: stub curl's GraphQL response and
-      # jq (called once to build the payload, then to read the issue title).
+      # get_task_slug makes one Linear call for branchName and title: jq builds
+      # the payload, curl returns the GraphQL response, then jq parses it into
+      # two lines (an empty branchName, then the title).
       mock_first_with_rest curl 'echo "{}"'
-      mock_first_with_rest jq 'echo "{}"' 'cat > /dev/null; echo "Do stuff"'
+      mock_first_with_rest jq \
+        'echo "{}"' \
+        'cat > /dev/null; printf "\nDo stuff\n"'
       mock_first_with_rest git \
         'mkdir -p my-repo' \
         'true' \
@@ -168,10 +177,13 @@ Describe 'git-create-task.sh'
       # so it falls back to the exported env value without real Keychain access.
       printf '%s\n' '#!/bin/sh' 'exit 44' > security
       chmod +x security
-      # get_task_summary tries Linear first: stub curl's GraphQL response and
-      # jq (called once to build the payload, then to read the issue title).
+      # get_task_slug makes one Linear call for branchName and title: jq builds
+      # the payload, curl returns the GraphQL response, then jq parses it into
+      # two lines (an empty branchName, then the title).
       mock_first_with_rest curl 'echo "{}"'
-      mock_first_with_rest jq 'echo "{}"' 'cat > /dev/null; echo "Do stuff"'
+      mock_first_with_rest jq \
+        'echo "{}"' \
+        'cat > /dev/null; printf "\nDo stuff\n"'
       mock_first_with_rest git \
         'mkdir -p my-repo' \
         'true' \
@@ -197,14 +209,14 @@ Describe 'git-create-task.sh'
       # so it falls back to the exported env value without real Keychain access.
       printf '%s\n' '#!/bin/sh' 'exit 44' > security
       chmod +x security
-      # get_task_slug's summary lookup and git-create-task.sh's project-label
-      # fallback each build a GraphQL payload with jq, POST it with curl, then
-      # parse the response with jq -- in that order, twice over: summary
-      # payload+parse, then label payload+parse.
+      # get_task_slug's branchName/title lookup and git-create-task.sh's
+      # project-label fallback each build a GraphQL payload with jq, POST it
+      # with curl, then parse the response with jq -- in that order, twice
+      # over: slug (empty branchName, then title), then label.
       mock_first_with_rest curl 'echo "{}"' 'echo "{}"'
       mock_first_with_rest jq \
         'echo "{}"' \
-        'cat > /dev/null; echo "Do stuff"' \
+        'cat > /dev/null; printf "\nDo stuff\n"' \
         'echo "{}"' \
         'cat > /dev/null; echo "my-repo"'
       mock_first_with_rest git \
@@ -235,7 +247,7 @@ Describe 'git-create-task.sh'
       mock_first_with_rest curl 'echo "{}"' 'echo "{}"'
       mock_first_with_rest jq \
         'echo "{}"' \
-        'cat > /dev/null; echo "Do stuff"' \
+        'cat > /dev/null; printf "\nDo stuff\n"' \
         'echo "{}"' \
         'cat > /dev/null; true'
 
@@ -246,6 +258,36 @@ Describe 'git-create-task.sh'
     When call in_tempdir set_up_and_call
     The status should be failure
     The stderr should include "No PROJECT_DIR_NAME given"
+  End
+
+  It 'uses the Linear branchName, with "/" unicodified, as the task slug'
+    set_up_and_call() {
+      export ATLASSIAN_API_TOKEN=test LINEAR_API_KEY=test
+      # set_key probes the Keychain first; report the item as absent (exit 44)
+      # so it falls back to the exported env value without real Keychain access.
+      printf '%s\n' '#!/bin/sh' 'exit 44' > security
+      chmod +x security
+      # get_task_slug's single Linear lookup builds a payload with jq, POSTs it
+      # with curl, then parses the response with jq into the branchName line
+      # followed by an (empty) title line.
+      mock_first_with_rest curl 'echo "{}"'
+      mock_first_with_rest jq \
+        'echo "{}"' \
+        'cat > /dev/null; printf "noel/abc-123-fix-thing\n\n"'
+      mock_first_with_rest git \
+        'mkdir -p my-repo' \
+        'true' \
+        'true' \
+        'true'
+
+      PATH="${PWD}:${PROJECT_ROOT_DIR}:${PATH}" \
+        "${PROJECT_ROOT_DIR}/git-create-task.sh" ABC-123 my-repo
+    }
+
+    When call in_tempdir set_up_and_call
+    The status should be success
+    The stdout should equal 'noel⁄abc-123-fix-thing/my-repo'
+    The stderr should not be blank
   End
 
 End

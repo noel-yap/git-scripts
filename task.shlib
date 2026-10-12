@@ -74,18 +74,20 @@ get_task_summary_from_jira() {
     jq -r '.fields.summary // empty'
 }
 
-# get_task_summary_from_linear TASK — fetches the Linear issue title for TASK
-# via the GraphQL API. Resolves LINEAR_API_KEY via set_key (env, Keychain,
-# 1Password, or AWS Secrets Manager). TASK is the human-readable identifier
-# (e.g. ENG-123), which Linear's `issue` query accepts directly.
-get_task_summary_from_linear() {
+# _linear_issue_query TASK SELECTION — private helper: POSTs a GraphQL query
+# for TASK's issue, selecting SELECTION (e.g. 'title' or 'branchName title'), and
+# prints the raw JSON response. Resolves LINEAR_API_KEY via set_key (env,
+# Keychain, 1Password, or AWS Secrets Manager). TASK is the human-readable
+# identifier (e.g. ENG-123), which Linear's `issue` query accepts directly.
+_linear_issue_query() {
   local _task="$1"
+  local _selection="$2"
 
   set_key LINEAR_API_KEY
 
   # $id/$query are GraphQL and jq variables, intentionally not shell-expanded.
   # shellcheck disable=SC2016
-  local query='query($id: String!) { issue(id: $id) { title } }'
+  local query="query(\$id: String!) { issue(id: \$id) { ${_selection} } }"
   local payload
   payload="$(jq --null-input \
     --arg query "${query}" \
@@ -97,8 +99,26 @@ get_task_summary_from_linear() {
     --header "Authorization: ${LINEAR_API_KEY}" \
     --header 'Content-Type: application/json' \
     --data "${payload}" \
-    https://api.linear.app/graphql |
-    jq -r '.data.issue.title // empty'
+    https://api.linear.app/graphql
+}
+
+# get_task_summary_from_linear TASK — fetches the Linear issue title for TASK
+# via the GraphQL API (see _linear_issue_query).
+get_task_summary_from_linear() {
+  local response
+  response="$(_linear_issue_query "$1" 'title')" || return
+  jq -r '.data.issue.title // empty' <<< "${response}"
+}
+
+# get_linear_branch_name_and_title TASK — fetches, in a single GraphQL call,
+# Linear's suggested git branch name (the issue's `branchName`, e.g.
+# noel/eng-123-fix-thing) and title for TASK. Emits exactly two lines: the
+# branch name, then the title; either is empty when absent (both are when the
+# issue is not found).
+get_linear_branch_name_and_title() {
+  local response
+  response="$(_linear_issue_query "$1" 'branchName title')" || return
+  jq -r '.data.issue | (.branchName // ""), (.title // "")' <<< "${response}"
 }
 
 # get_task_projects_from_linear TASK — fetches the "Repositories" label
@@ -111,26 +131,9 @@ get_task_summary_from_linear() {
 # see GIT_ORG in git-clone-with-cache.shlib). Emits nothing when the issue is
 # not found or has no such labels.
 get_task_projects_from_linear() {
-  local _task="$1"
-
-  set_key LINEAR_API_KEY
-
-  # $id/$query are GraphQL and jq variables, intentionally not shell-expanded.
-  # shellcheck disable=SC2016
-  local query='query($id: String!) { issue(id: $id) { labels { nodes { name parent { name } } } } }'
-  local payload
-  payload="$(jq --null-input \
-    --arg query "${query}" \
-    --arg id "${_task}" \
-    '{query: $query, variables: {id: $id}}')"
-
-  curl --silent --fail \
-    --request POST \
-    --header "Authorization: ${LINEAR_API_KEY}" \
-    --header 'Content-Type: application/json' \
-    --data "${payload}" \
-    https://api.linear.app/graphql |
-    jq -r '.data.issue.labels.nodes // [] | .[] | select(.parent.name == "Repositories") | .name | sub("^[^/]*/"; "")'
+  local response
+  response="$(_linear_issue_query "$1" 'labels { nodes { name parent { name } } }')" || return
+  jq -r '.data.issue.labels.nodes // [] | .[] | select(.parent.name == "Repositories") | .name | sub("^[^/]*/"; "")' <<< "${response}"
 }
 
 # get_task_summary TASK — fetches TASK's summary, trying Linear first and
@@ -146,8 +149,11 @@ get_task_summary() {
 }
 
 # get_task_slug TASK — returns a slug for use as a branch/directory name.
-# - Fetches the task summary (Linear, falling back to Jira) when available and
-#   builds TASK：SUMMARY; otherwise uses TASK alone.
+# - Makes one Linear call (see get_linear_branch_name_and_title) and prefers
+#   its branchName, with punctuation unicodified so it is safe as both a git
+#   ref and a directory name (e.g. / → ⁄).
+# - Otherwise uses Linear's title, falling back to the Jira summary, and builds
+#   TASK：SUMMARY; failing that, uses TASK alone.
 # - If the result is 64 characters or longer, truncates to 63 characters and appends ⋯.
 get_task_slug() {
   local _task="$1"
@@ -156,8 +162,16 @@ get_task_slug() {
 
   # shellcheck source=string.shlib
   . "$(dirname "$(realpath "${BASH_SOURCE[0]}")")/string.shlib"
-  local raw_summary
-  if raw_summary="$(get_task_summary "${_task}")"; then
+  local branch_name='' title=''
+  { IFS= read -r branch_name; IFS= read -r title; } \
+    <<< "$(get_linear_branch_name_and_title "${_task}")" || true
+  local raw_summary="${title}"
+  if [[ -z "${branch_name}" && -z "${raw_summary}" ]]; then
+    raw_summary="$(get_task_summary_from_jira "${_task}")" || raw_summary=''
+  fi
+  if [[ -n "${branch_name}" ]]; then
+    _task_and_summary="$(unicodify_punctuation "${branch_name}")"
+  elif [[ -n "${raw_summary}" ]]; then
     local summary
     summary="$(unicodify_punctuation "${raw_summary}")"
     local -r fullwidth_colon='：'

@@ -25,9 +25,11 @@ shopt -s inherit_errexit
 #                       stripped to a bare repo name -- see Notes).
 #
 # Behavior
-# - Looks up the task summary (Linear preferred, falling back to Jira) via the respective API
-#   and sanitizes it to form a readable branch suffix (punctuation removed, spaces converted
-#   to underscores).
+# - Prefers the Linear issue's `branchName` (e.g. noel/eng-123-fix-thing), unicodifying
+#   punctuation so it is safe as both a git ref and a directory name (e.g. "/" becomes "⁄").
+# - Otherwise looks up the task summary (Linear preferred, falling back to Jira) via the
+#   respective API and sanitizes it to form a readable branch suffix (punctuation removed,
+#   spaces converted to underscores).
 # - Constructs a branch name: "<TASK_KEY>.<sanitized_summary>".
 # - When PROJECT_DIR_NAME is omitted, fetches the Linear issue's "Repositories" label group
 #   to derive the list of projects, stripping each label's "org/" prefix. Exits with error

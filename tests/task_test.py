@@ -7,6 +7,7 @@ inherit_errexit`) so tests catch bugs that only manifest under those flags.
 
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
 
 from test_utils import _run
@@ -33,6 +34,10 @@ _ABSENT_KEY_SOURCES_STUB = (
     "security() { return 44; }; "
     "op() { return 127; }; "
 )
+
+# Makes get_task_slug's single Linear lookup fail, so a test exercises the Jira
+# fallback without a real Linear call.
+_NO_LINEAR_STUB = "get_linear_branch_name_and_title() { return 1; }; "
 
 
 class TestGetTaskId:
@@ -440,6 +445,51 @@ class TestGetTaskProjectsFromLinear:
         assert result.stdout == ""
 
 
+class TestGetLinearBranchNameAndTitle:
+    """get_linear_branch_name_and_title posts one GraphQL query and emits the
+    issue's `branchName` then `title`, one per line, either empty when absent.
+    """
+
+    @staticmethod
+    def _call(curl_body: str) -> subprocess.CompletedProcess[str]:
+        return _run(
+            f'source "{SHLIB}"; '
+            "export LINEAR_API_KEY=test; "
+            "security() { return 44; }; "
+            f"curl() {{ printf '%s' '{curl_body}'; }}; "
+            "get_linear_branch_name_and_title ENG-123"
+        )
+
+    def test_emits_branch_name_then_title(self) -> None:
+        result = self._call(
+            '{"data":{"issue":{"branchName":"noel/eng-123-fix","title":"Fix it"}}}'
+        )
+        assert result.returncode == 0
+        assert result.stdout == "noel/eng-123-fix\nFix it\n"
+
+    def test_emits_empty_lines_when_issue_is_not_found(self) -> None:
+        # A nonexistent issue yields a null `data.issue`; it must not emit the
+        # literal string "null".
+        result = self._call('{"data":{"issue":null}}')
+        assert result.stdout == "\n\n"
+
+    def test_emits_empty_branch_name_line_when_branch_name_is_null(self) -> None:
+        result = self._call('{"data":{"issue":{"branchName":null,"title":"T"}}}')
+        assert result.stdout == "\nT\n"
+
+    def test_fails_when_curl_fails(self) -> None:
+        result = _run(
+            f'source "{SHLIB}"; '
+            "export LINEAR_API_KEY=test; "
+            "security() { return 44; }; "
+            "curl() { return 22; }; "
+
+            "get_linear_branch_name_and_title ENG-123"
+        )
+        assert result.returncode != 0
+        assert result.stdout == ""
+
+
 class TestGetTaskSummary:
     """get_task_summary tries Linear first and falls back to Jira, returning the
     first source that yields a non-empty summary.
@@ -517,7 +567,8 @@ class TestGetTaskSlug:
     ) -> None:
         result = _run(
             f'source "{SHLIB}"; '
-            "get_task_summary() { return 1; }; "
+            + _NO_LINEAR_STUB
+            + "get_task_summary_from_jira() { return 1; }; "
             "get_task_slug do-something"
         )
         assert result.returncode == 0
@@ -529,7 +580,8 @@ class TestGetTaskSlug:
     ) -> None:
         result = _run(
             f'source "{SHLIB}"; '
-            "get_task_summary() { return 1; }; "
+            + _NO_LINEAR_STUB
+            + "get_task_summary_from_jira() { return 1; }; "
             f"get_task_slug {_KEY_63}"
         )
         assert result.returncode == 0
@@ -540,7 +592,8 @@ class TestGetTaskSlug:
     ) -> None:
         result = _run(
             f'source "{SHLIB}"; '
-            "get_task_summary() { return 1; }; "
+            + _NO_LINEAR_STUB
+            + "get_task_summary_from_jira() { return 1; }; "
             f"get_task_slug {_KEY_64}"
         )
         assert result.returncode == 0
@@ -551,7 +604,8 @@ class TestGetTaskSlug:
     ) -> None:
         result = _run(
             f'source "{SHLIB}"; '
-            "get_task_summary() { printf 'Dostuff'; }; "
+            + _NO_LINEAR_STUB
+            + "get_task_summary_from_jira() { printf 'Dostuff'; }; "
             "get_task_slug ABC-123"
         )
         assert result.returncode == 0
@@ -564,7 +618,7 @@ class TestGetTaskSlug:
             "unset ATLASSIAN_API_TOKEN; "
             "export LINEAR_API_KEY=test; "
             "security() { return 44; }; "
-            "get_task_summary_from_linear() { printf 'LinearSummary'; }; "
+            + "get_linear_branch_name_and_title() { printf '\\nLinearSummary\\n'; }; "
             "get_task_slug ENG-123"
         )
         assert result.returncode == 0
@@ -593,9 +647,80 @@ class TestGetTaskSlug:
         expected = ("ABC-123：" + "a" * 56)[:63] + "⋯"
         result = _run(
             f'source "{SHLIB}"; '
-            f"get_task_summary() {{ printf '{summary}'; }}; "
+            + _NO_LINEAR_STUB
+            + f"get_task_summary_from_jira() {{ printf '{summary}'; }}; "
             "get_task_slug ABC-123"
         )
         assert result.returncode == 0
         assert result.stdout == expected + "\n"
         assert result.stderr == ""
+
+    def test_prefers_linear_branch_name_and_unicodifies_slashes(self) -> None:
+        result = _run(
+            f'source "{SHLIB}"; '
+            "get_linear_branch_name_and_title() "
+            "{ printf 'noel/eng-123-fix-thing\\nTitle\\n'; }; "
+            "get_task_summary_from_jira() { printf 'should-not-be-used'; }; "
+            "get_task_slug ENG-123"
+        )
+        assert result.returncode == 0
+        assert result.stdout == "noel⁄eng-123-fix-thing\n"
+        assert result.stderr == ""
+
+    def test_falls_back_to_summary_when_branch_name_is_empty(self) -> None:
+        result = _run(
+            f'source "{SHLIB}"; '
+            "get_linear_branch_name_and_title() { printf '\\nDostuff\\n'; }; "
+            "get_task_summary_from_jira() { printf 'should-not-be-used'; }; "
+            "get_task_slug ENG-123"
+        )
+        assert result.returncode == 0
+        assert result.stdout == "ENG-123：Dostuff\n"
+
+    def test_uses_linear_title_without_calling_jira_when_branch_name_is_empty(
+        self,
+    ) -> None:
+        result = _run(
+            f'source "{SHLIB}"; '
+            "get_linear_branch_name_and_title() { printf '\\nDostuff\\n'; }; "
+            "get_task_summary_from_jira() { echo called >&2; return 1; }; "
+            "get_task_slug ENG-123"
+        )
+        assert result.returncode == 0
+        assert result.stdout == "ENG-123：Dostuff\n"
+        assert result.stderr == ""
+
+    def test_makes_a_single_linear_call(self) -> None:
+        result = _run(
+            f'source "{SHLIB}"; '
+            "export LINEAR_API_KEY=test; "
+            "security() { return 44; }; "
+            "curl() { echo curl >&2; printf '%s' "
+            "'{\"data\":{\"issue\":{\"branchName\":\"a/b\",\"title\":\"T\"}}}'; }; "
+            "get_task_slug ENG-123"
+        )
+        assert result.returncode == 0
+        assert result.stdout == "a⁄b\n"
+        assert result.stderr == "curl\n"
+
+    def test_truncates_when_branch_name_reaches_64_characters(self) -> None:
+        # noel/ (5) + 59 a's = 64 chars -> truncated to 63 + ⋯.
+        branch_name = "noel/" + "a" * 59
+        expected = branch_name.replace("/", "⁄")[:63] + "⋯"
+        result = _run(
+            f'source "{SHLIB}"; '
+            f"get_linear_branch_name_and_title() {{ printf '{branch_name}\\n\\n'; }}; "
+            "get_task_slug ENG-123"
+        )
+        assert result.returncode == 0
+        assert result.stdout == expected + "\n"
+
+    def test_does_not_truncate_when_branch_name_is_63_characters(self) -> None:
+        branch_name = "noel/" + "a" * 58
+        result = _run(
+            f'source "{SHLIB}"; '
+            f"get_linear_branch_name_and_title() {{ printf '{branch_name}\\n\\n'; }}; "
+            "get_task_slug ENG-123"
+        )
+        assert result.returncode == 0
+        assert result.stdout == branch_name.replace("/", "⁄") + "\n"
